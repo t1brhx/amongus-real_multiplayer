@@ -1,0 +1,1274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Among Us Real – Multiplayer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07070f;
+      --surface: #11111e;
+      --surface2: #1a1a2e;
+      --border: rgba(255,255,255,0.08);
+      --red: #e8192c;
+      --yellow: #f5c518;
+      --blue: #1e90ff;
+      --green: #4ade80;
+      --text: #e8e8f4;
+      --muted: #6f6f92;
+      --accent: #7c5cbf;
+      --purple: #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Rajdhani', sans-serif;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    #bg-canvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+
+    .screen {
+      position: fixed; inset: 0; z-index: 1;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+      padding: 18px;
+      overflow-y: auto;
+      transition: opacity .28s ease, transform .28s ease;
+    }
+    .hidden { opacity: 0; pointer-events: none; transform: scale(.98); }
+
+    .card {
+      width: 100%; max-width: 430px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 20px 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.55);
+      display: flex; flex-direction: column; gap: 14px;
+      margin: auto 0;
+    }
+    .role-card {
+      width: 100%; max-width: 430px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,.55);
+      display: flex; flex-direction: column; gap: 12px;
+      margin: 10px 0 30px;
+      max-height: calc(100vh - 36px);
+      overflow: hidden;
+    }
+    .role-scroll {
+      display: flex; flex-direction: column; gap: 12px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: clamp(1.35rem, 6vw, 2rem);
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.2;
+      background: linear-gradient(135deg, #a78bfa 0%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      font-size: .78rem;
+    }
+    .field-label {
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: -6px;
+    }
+    input, select {
+      width: 100%;
+      background: var(--surface2);
+      color: var(--text);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 1.05rem;
+      font-family: 'Rajdhani', sans-serif;
+      outline: none;
+    }
+    input::placeholder { color: var(--muted); }
+    input:focus, select:focus { border-color: var(--accent); }
+    button {
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      letter-spacing: .7px;
+      transition: transform .12s ease, opacity .2s ease;
+    }
+    button:active { transform: scale(.985); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+
+    .btn-primary { background: linear-gradient(135deg, #7c3aed, #4338ca); color: #fff; padding: 15px; box-shadow: 0 4px 20px rgba(124,58,237,.35); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 13px; }
+    .btn-report { background: linear-gradient(135deg,#b45309,#78350f); color: #fff; padding: 14px; }
+    .btn-kill { background: linear-gradient(135deg,#dc2626,#7f1d1d); color: #fff; padding: 14px; }
+    .btn-shoot { background: linear-gradient(135deg,#ca8a04,#713f12); color: #fff; padding: 14px; }
+    .btn-sabo { background: linear-gradient(135deg,#7c3aed,#4c1d95); color: #fff; padding: 14px; }
+    .btn-end { background: linear-gradient(135deg,#059669,#065f46); color: #fff; padding: 14px; }
+    .btn-confirm { background: linear-gradient(135deg,#2563eb,#1d4ed8); color:#fff; padding:14px; }
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; min-width: 0; }
+    .row.wrap { flex-wrap: wrap; }
+
+    .code {
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2rem;
+      letter-spacing: 6px;
+      color: var(--purple);
+      text-shadow: 0 0 18px rgba(167,139,250,.45);
+    }
+    .muted { color: var(--muted); font-size: .84rem; text-align: center; }
+    .small-note {
+      background: rgba(245,197,24,.08);
+      border: 1px solid rgba(245,197,24,.2);
+      color: #f8df7a;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: .8rem;
+      line-height: 1.35;
+    }
+
+    .list, .tasks, .targets, .ally-list, .vote-list { display: flex; flex-direction: column; gap: 8px; }
+    .list, .targets, .ally-list, .vote-list { max-height: 26vh; overflow-y: auto; padding-right: 2px; }
+    .tasks { max-height: 34vh; overflow-y: auto; padding-right: 2px; }
+
+    .item, .task, .target, .ally {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .target, .ally { display: flex; align-items: center; gap: 12px; }
+    .target { cursor: pointer; }
+    .target.selected { border-color: var(--accent); background: rgba(124,92,191,.12); }
+    .target-avatar {
+      width: 34px; height: 34px; border-radius: 10px;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Orbitron', sans-serif; font-size: .9rem; font-weight: 900;
+      flex-shrink: 0;
+    }
+    .target-name { flex: 1; font-weight: 700; }
+    .task { display: flex; align-items: flex-start; gap: 10px; }
+    .task.done { opacity: .58; }
+    .task-info { flex: 1; }
+    .task-name { font-weight: 700; font-size: .95rem; }
+    .task-desc { color: var(--muted); font-size: .78rem; line-height: 1.35; }
+    .task-btn {
+      background: rgba(74,222,128,.12);
+      color: var(--green);
+      border: 1px solid rgba(74,222,128,.3);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .task-check { color: var(--green); font-size: 1.1rem; }
+
+    .progress-wrap { width: 100%; height: 8px; background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #a78bfa); transition: width .35s ease; }
+    .progress-text { color: var(--muted); font-size: .78rem; }
+
+    .badge {
+      padding: 6px 12px; border-radius: 999px; font-size: .72rem;
+      font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px;
+      border: 1px solid currentColor; display: inline-block;
+    }
+    .red { color: var(--red); }
+    .yellow { color: var(--yellow); }
+    .blue { color: var(--blue); }
+    .green { color: var(--green); }
+
+    .status-strip {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 2px;
+      gap: 12px;
+    }
+    .overlay {
+      position: fixed; inset: 0; z-index: 12;
+      background: rgba(0,0,0,.88); backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 18px;
+      text-align: center;
+    }
+    .overlay-card {
+      width: 100%; max-width: 400px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 22px 18px;
+      display: flex; flex-direction: column; gap: 12px;
+      max-height: calc(100vh - 36px);
+      overflow: hidden;
+    }
+    .overlay-scroll { display:flex; flex-direction:column; gap:12px; overflow-y:auto; }
+    .big-emoji { font-size: 4rem; }
+    .big-title { font-family: 'Orbitron', sans-serif; font-size: 1.45rem; font-weight: 900; }
+
+    .ally { justify-content: space-between; background: rgba(232,25,44,.08); }
+    .sabo-panel { display: flex; flex-direction: column; gap: 8px; }
+
+    .toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+      background: var(--surface2); color: var(--text); border: 1px solid var(--border);
+      border-radius: 999px; padding: 10px 18px; z-index: 20; opacity: 0;
+      transition: transform .25s ease, opacity .25s ease;
+      font-size: .9rem; font-weight: 600;
+      white-space: nowrap; max-width: 92vw; overflow: hidden; text-overflow: ellipsis;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-thumb { background: rgba(167,139,250,.55); border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="screen" id="join-screen">
+    <div class="card">
+      <div class="title">Among Us Real</div>
+      <div class="subtitle">Multiplayer em tempo real</div>
+      <div class="small-note">O site usa Firebase. Se você trocar de projeto, atualize o <strong>firebaseConfig</strong> no código.</div>
+      <label class="field-label">Seu nome</label>
+      <input id="joinName" type="text" placeholder="Ex: Thiago" maxlength="25" />
+      <label class="field-label">Código da partida</label>
+      <input id="joinCode" type="text" placeholder="Ex: ABC123" maxlength="8" style="text-transform:uppercase; letter-spacing:3px; font-family:'Orbitron',sans-serif;" />
+      <button class="btn-primary" id="btnJoin">🚀 Entrar na Partida</button>
+      <button class="btn-secondary" id="btnGoAdmin">⚙️ Painel Admin</button>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="admin-screen">
+    <div class="card">
+      <div class="title">Painel Admin</div>
+      <div class="subtitle">Criar e iniciar partida</div>
+      <label class="field-label">Total de jogadores</label>
+      <input id="adminTotal" type="number" min="3" max="40" value="10" />
+      <label class="field-label">Impostores</label>
+      <input id="adminImpostors" type="number" min="1" max="5" value="3" />
+      <label class="field-label">Sheriffs</label>
+      <input id="adminSheriffs" type="number" min="0" max="3" value="2" />
+      <button class="btn-primary" id="btnCreate">🛸 Criar Partida</button>
+      <div id="adminCreated" class="hidden">
+        <div class="subtitle" style="margin: 10px 0 6px;">Código da partida</div>
+        <div class="code" id="adminCode">------</div>
+        <div class="muted" id="adminInfo">0/0 conectados</div>
+        <div class="list" id="adminPlayers"></div>
+        <div class="row wrap">
+          <button class="btn-primary" id="btnStart">🚀 Iniciar</button>
+          <button class="btn-end" id="btnEnd">🏁 Encerrar</button>
+        </div>
+      </div>
+      <button class="btn-secondary" id="btnBackJoin">← Voltar</button>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="lobby-screen">
+    <div class="card">
+      <div class="title">Aguardando</div>
+      <div class="subtitle">Código da partida</div>
+      <div class="code" id="lobbyCode">------</div>
+      <div class="muted" id="lobbyInfo">0/0 conectados</div>
+      <div class="list" id="lobbyPlayers"></div>
+      <div class="muted">⏳ Esperando o admin iniciar...</div>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="role-screen">
+    <div class="role-card" id="roleCard">
+      <div class="status-strip">
+        <div>
+          <div id="rolePlayerName" style="font-family:'Orbitron',sans-serif;font-size:1rem;font-weight:900;">—</div>
+          <div id="roleStatus" class="muted">VIVO</div>
+        </div>
+        <div id="roleBadge" class="badge">PAPEL</div>
+      </div>
+
+      <div class="role-scroll">
+        <div id="crewArea" class="hidden">
+          <div class="field-label">Minhas tasks</div>
+          <div class="progress-wrap"><div class="progress-bar" id="crewProgressBar"></div></div>
+          <div class="progress-text" id="crewProgressText">0/0 tasks</div>
+          <div class="tasks" id="crewTasks"></div>
+          <div class="row"><button class="btn-report" id="crewReport">📣 Reportar</button></div>
+        </div>
+
+        <div id="sheriffArea" class="hidden">
+          <div class="field-label">Minhas tasks</div>
+          <div class="progress-wrap"><div class="progress-bar" id="sheriffProgressBar"></div></div>
+          <div class="progress-text" id="sheriffProgressText">0/0 tasks</div>
+          <div class="tasks" id="sheriffTasks"></div>
+          <div class="field-label" style="margin-top:4px;">Selecionar alvo</div>
+          <div class="targets" id="sheriffTargets"></div>
+          <div class="row wrap">
+            <button class="btn-report" id="sheriffReport">📣 Reportar</button>
+            <button class="btn-shoot" id="sheriffShoot">🔫 Atirar</button>
+          </div>
+        </div>
+
+        <div id="impostorArea" class="hidden">
+          <button class="btn-secondary" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
+
+          <div id="realImpostorControls">
+            <div class="field-label">Selecionar alvo</div>
+            <div class="targets" id="impostorTargets"></div>
+            <div class="field-label" style="margin-top:4px;">Equipe dos impostores</div>
+            <div class="ally-list" id="impostorTeam"></div>
+            <div class="row wrap">
+              <button class="btn-report" id="impostorReport">📣 Reportar</button>
+              <button class="btn-kill" id="impostorKill">💀 Matar</button>
+              <button class="btn-sabo" id="btnToggleSabo">⚡ Sabotar</button>
+            </div>
+            <div class="muted" id="killCooldownText">Cooldown de kill pronto.</div>
+            <div class="sabo-panel hidden" id="saboPanel">
+              <button class="btn-sabo" data-sabo="lights">🔦 Falha elétrica</button>
+              <button class="btn-sabo" data-sabo="emergency">🚨 Sistema desconhecido</button>
+              <button class="btn-sabo" data-sabo="task">⚠️ Sistema crítico</button>
+            </div>
+          </div>
+
+          <div id="fakeCrewArea" class="hidden">
+            <div class="field-label">Tasks</div>
+            <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
+            <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
+            <div class="tasks" id="fakeCrewTasks"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen hidden" id="gameover-screen">
+    <div class="card">
+      <div class="title">Fim de jogo</div>
+      <div class="subtitle" id="gameoverSubtitle">Papéis revelados</div>
+      <div class="list" id="gameoverList"></div>
+      <button class="btn-secondary" id="btnReload">↻ Voltar ao início</button>
+    </div>
+  </div>
+
+  <div id="meetingOverlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-scroll">
+        <div class="big-emoji">🚨</div>
+        <div class="big-title" style="color: var(--red);">REUNIÃO</div>
+        <div class="muted" id="meetingText">Reunião iniciada</div>
+        <div class="muted" id="meetingVotesInfo">0/0 votos</div>
+        <div class="vote-list" id="meetingVoteList"></div>
+        <div class="muted" id="meetingSelectedText">Selecione alguém ou Skip.</div>
+        <div class="row wrap">
+          <button class="btn-confirm" id="btnConfirmVote">✅ Confirmar voto</button>
+          <button class="btn-end hidden" id="btnEndMeeting">🗳️ Encerrar votação</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="saboOverlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="overlay-scroll">
+        <div class="big-emoji">⚠️</div>
+        <div class="big-title" id="saboTitle">Sabotagem</div>
+        <div class="muted" id="saboText">Algo aconteceu</div>
+        <div class="muted" id="saboProgress">0/0 ajudaram</div>
+        <button class="btn-end hidden" id="btnFixSabo">🔧 Ajudar a corrigir</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getDatabase, ref, set, get, update, onValue, off, onDisconnect, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSR8T_CzazU3r0sdkcaipnO_oLFKgG-Jw",
+      authDomain: "amongus-real.firebaseapp.com",
+      databaseURL: "https://amongus-real-default-rtdb.firebaseio.com",
+      projectId: "amongus-real",
+      storageBucket: "amongus-real.firebasestorage.app",
+      messagingSenderId: "490307851255",
+      appId: "1:490307851255:web:1a9cfe6df7002a68cf94f2"
+    };
+
+    const configIncomplete = Object.values(firebaseConfig).some(v => !v || v === 'COLE_AQUI');
+    let app = null;
+    let db = null;
+    if (!configIncomplete) {
+      app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+    }
+
+    const TASKS_POOL = [
+      { id:'t1',  name:'Verificar energia',      desc:'📍 Vá para a Sala e confirme o sistema.', place:'Sala' },
+      { id:'t2',  name:'Checar suprimentos',    desc:'📍 Vá para a Cafeteria e confirme os itens.', place:'Cafeteria' },
+      { id:'t3',  name:'Inspecionar área crítica', desc:'📍 Vá para o Pentágono e faça a checagem.', place:'Pentágono' },
+      { id:'t4',  name:'Ronda interna',         desc:'📍 Vá para o Corredor Principal.', place:'Corredor Principal' },
+      { id:'t5',  name:'Revisar base',          desc:'📍 Vá para a Sala e finalize a inspeção.', place:'Sala' },
+      { id:'t6',  name:'Conferir ponto central',desc:'📍 Vá para a Cafeteria e aguarde alguns segundos.', place:'Cafeteria' },
+      { id:'t7',  name:'Testar setor isolado',  desc:'📍 Vá para o Pentágono e valide o setor.', place:'Pentágono' },
+      { id:'t8',  name:'Patrulha curta',        desc:'📍 Vá até o Corredor Principal e volte.', place:'Corredor Principal' },
+      { id:'t9',  name:'Checar iluminação',     desc:'📍 Vá para a Sala e observe a iluminação.', place:'Sala' },
+      { id:'t10', name:'Contar cadeiras',       desc:'📍 Vá para a Sala e conte as cadeiras.', place:'Sala' },
+      { id:'t11', name:'Conferir mesas',        desc:'📍 Vá para a Cafeteria e observe as mesas.', place:'Cafeteria' },
+      { id:'t12', name:'Inspecionar canto',     desc:'📍 Vá para o Pentágono e confira o canto final.', place:'Pentágono' },
+      { id:'t13', name:'Analisar passagem',     desc:'📍 Vá para o Corredor Principal e observe a passagem.', place:'Corredor Principal' },
+      { id:'t14', name:'Verificar estoque',     desc:'📍 Vá para a Cafeteria e simule checagem de estoque.', place:'Cafeteria' },
+      { id:'t15', name:'Checar área técnica',   desc:'📍 Vá para o Pentágono e confira o setor.', place:'Pentágono' },
+      { id:'t16', name:'Confirmar presença',    desc:'📍 Vá para a Sala e permaneça 3 segundos.', place:'Sala' },
+      { id:'t17', name:'Revisar circulação',    desc:'📍 Caminhe pelo Corredor Principal.', place:'Corredor Principal' },
+      { id:'t18', name:'Observar ponto comum',  desc:'📍 Vá para a Cafeteria e confira o local.', place:'Cafeteria' },
+      { id:'t19', name:'Checar área final',     desc:'📍 Vá para o Pentágono e toque a parede final.', place:'Pentágono' },
+      { id:'t20', name:'Confirmar rota',        desc:'📍 Vá para o Corredor Principal e valide a rota.', place:'Corredor Principal' }
+    ];
+
+    const SABOTAGE_MAP = {
+      lights:    { title:'🔦 FALHA ELÉTRICA',            label:'Vá para a SALA agora!',       place:'Sala' },
+      emergency: { title:'🚨 SISTEMA DESCONHECIDO FALHOU', label:'Vá para a CAFETERIA agora!',  place:'Cafeteria' },
+      task:      { title:'⚠️ SISTEMA CRÍTICO',          label:'Vá para o PENTÁGONO agora!',  place:'Pentágono' }
+    };
+
+    const ROLE_CFG = {
+      IMPOSTOR:  { icon:'😈', color:'#e8192c', desc:'Mata, sabota e se mistura.' },
+      SHERIFF:   { icon:'🔫', color:'#f5c518', desc:'Pode atirar em suspeitos.' },
+      TRIPULANTE:{ icon:'🧑‍🚀', color:'#1e90ff', desc:'Faz tasks e tenta sobreviver.' }
+    };
+
+    let myPlayerId = localStorage.getItem('au_pid') || null;
+    let myMatchId = localStorage.getItem('au_mid') || null;
+    let myRole = null;
+    let myName = null;
+    let myStatus = 'alive';
+    let selectedTargetId = null;
+    let selectedVoteTarget = null;
+    let listeners = [];
+    let fakeCrewMode = false;
+    let myPlayerSnapshot = null;
+    let fakeCrewTasksCache = makeTasks();
+
+    const el = id => document.getElementById(id);
+
+    function toast(msg, ms=2800){
+      const t = el('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(t._timer);
+      t._timer = setTimeout(()=> t.classList.remove('show'), ms);
+    }
+
+    function showScreen(id) {
+      ['join-screen','admin-screen','lobby-screen','role-screen','gameover-screen'].forEach(s => {
+        el(s).classList.toggle('hidden', s !== id);
+      });
+    }
+
+    function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
+    function uid(){ return Math.random().toString(36).slice(2,10); }
+    function code(){ return Math.random().toString(36).slice(2,8).toUpperCase(); }
+
+    function dbRef(...path){ return ref(db, path.join('/')); }
+    async function dbSet(path, val){ return set(dbRef(...path), val); }
+    async function dbUpdate(path, val){ return update(dbRef(...path), val); }
+    async function dbGet(path){ const snap = await get(dbRef(...path)); return snap.val(); }
+    function dbListen(path, cb){
+      const r = dbRef(...path);
+      onValue(r, s => cb(s.val()));
+      listeners.push(r);
+      return r;
+    }
+    function clearListeners(){ listeners.forEach(r => off(r)); listeners = []; }
+
+    function makeTasks() {
+      const chosen = shuffle(TASKS_POOL).slice(0, 15);
+      const out = {};
+      chosen.forEach(t => out[t.id] = {...t, done:false});
+      return out;
+    }
+
+    function getAliveConnectedPlayers(playersObj){
+      return Object.values(playersObj || {}).filter(p => p && p.status === 'alive' && p.connected !== false);
+    }
+
+    function setRoleUI(role) {
+      el('crewArea').classList.add('hidden');
+      el('sheriffArea').classList.add('hidden');
+      el('impostorArea').classList.add('hidden');
+
+      el('rolePlayerName').textContent = myName || '—';
+      el('roleStatus').textContent = myStatus === 'dead' ? 'MORTO' : 'VIVO';
+      el('roleBadge').textContent = `${ROLE_CFG[role].icon} ${role}`;
+      el('roleBadge').className = 'badge ' + (role === 'IMPOSTOR' ? 'red' : role === 'SHERIFF' ? 'yellow' : 'blue');
+
+      if(role === 'TRIPULANTE') el('crewArea').classList.remove('hidden');
+      if(role === 'SHERIFF') el('sheriffArea').classList.remove('hidden');
+      if(role === 'IMPOSTOR') el('impostorArea').classList.remove('hidden');
+    }
+
+    function renderTaskList(tasks, listId, barId, textId, clickable=true) {
+      const list = el(listId);
+      const values = Object.values(tasks || {});
+      const done = values.filter(t => t.done).length;
+      const pct = values.length ? Math.round(done / values.length * 100) : 0;
+      el(barId).style.width = pct + '%';
+      el(textId).textContent = `${done}/${values.length} tasks`;
+      list.innerHTML = values.map(task => `
+        <div class="task ${task.done ? 'done' : ''}">
+          <div class="task-info">
+            <div class="task-name">${task.name}</div>
+            <div class="task-desc">${task.desc}</div>
+          </div>
+          ${task.done
+            ? '<div class="task-check">✓</div>'
+            : (clickable && myStatus !== 'dead'
+              ? `<button class="task-btn" data-taskid="${task.id}">Feita</button>`
+              : '<div class="task-check">•</div>')}
+        </div>
+      `).join('') || '<div class="muted">Sem tasks.</div>';
+
+      if (clickable && myStatus !== 'dead') {
+        list.querySelectorAll('[data-taskid]').forEach(btn => {
+          btn.onclick = async () => {
+            const id = btn.dataset.taskid;
+            await dbUpdate(['matches', myMatchId, 'players', myPlayerId, 'tasks', id], { done: true });
+            toast('✅ Task concluída!');
+            await checkWinConditions();
+          };
+        });
+      }
+    }
+
+    function renderTargets(players, containerId) {
+      const cont = el(containerId);
+      if (!cont) return;
+      const alive = getAliveConnectedPlayers(players).filter(p => p.id !== myPlayerId);
+      if (!alive.length) {
+        cont.innerHTML = '<div class="muted">Nenhum alvo disponível.</div>';
+        return;
+      }
+      cont.innerHTML = alive.map(p => `
+        <div class="target ${selectedTargetId === p.id ? 'selected' : ''}" data-id="${p.id}">
+          <div class="target-avatar">${(p.name || '?')[0].toUpperCase()}</div>
+          <div class="target-name">${p.name}</div>
+        </div>
+      `).join('');
+
+      cont.querySelectorAll('.target').forEach(node => {
+        node.onclick = () => {
+          selectedTargetId = node.dataset.id;
+          if (containerId === 'sheriffTargets') renderTargets(players, 'sheriffTargets');
+          if (containerId === 'impostorTargets') renderTargets(players, 'impostorTargets');
+        };
+      });
+    }
+
+    function renderMeetingVoting(playersObj, meeting){
+      const container = el('meetingVoteList');
+      const alivePlayers = getAliveConnectedPlayers(playersObj);
+      el('meetingVotesInfo').textContent = `${Object.keys(meeting.votes || {}).length}/${alivePlayers.length} votos`;
+
+      const alreadyVoted = !!(meeting.votes && meeting.votes[myPlayerId]);
+      container.innerHTML = `
+        <div class="target ${selectedVoteTarget === 'skip' ? 'selected' : ''} ${alreadyVoted ? 'disabled' : ''}" data-vote="skip">
+          <div class="target-avatar">⏭️</div>
+          <div class="target-name">Skip</div>
+        </div>
+        ${alivePlayers.map(p => `
+          <div class="target ${selectedVoteTarget === p.id ? 'selected' : ''} ${alreadyVoted ? 'disabled' : ''}" data-vote="${p.id}">
+            <div class="target-avatar">${(p.name || '?')[0].toUpperCase()}</div>
+            <div class="target-name">${p.name}</div>
+          </div>
+        `).join('')}
+      `;
+
+      el('meetingSelectedText').textContent = alreadyVoted
+        ? 'Seu voto já foi confirmado.'
+        : selectedVoteTarget
+          ? (selectedVoteTarget === 'skip' ? 'Selecionado: Skip' : `Selecionado: ${alivePlayers.find(p => p.id === selectedVoteTarget)?.name || 'Jogador'}`)
+          : 'Selecione alguém ou Skip.';
+
+      el('btnConfirmVote').disabled = alreadyVoted || myStatus === 'dead' || !selectedVoteTarget;
+      el('btnEndMeeting').classList.toggle('hidden', !isAdmin());
+
+      if (!alreadyVoted && myStatus !== 'dead') {
+        container.querySelectorAll('[data-vote]').forEach(node => {
+          node.onclick = () => {
+            selectedVoteTarget = node.dataset.vote;
+            renderMeetingVoting(playersObj, meeting);
+          };
+        });
+      }
+    }
+
+    function showMeeting(meeting) {
+      el('meetingText').textContent = `Convocada por ${meeting.calledBy}`;
+      el('meetingOverlay').classList.remove('hidden');
+    }
+    function hideMeeting() {
+      el('meetingOverlay').classList.add('hidden');
+      selectedVoteTarget = null;
+      el('meetingVoteList').innerHTML = '';
+      el('meetingSelectedText').textContent = 'Selecione alguém ou Skip.';
+    }
+
+    function showSabo(sabo, playersObj) {
+      el('saboTitle').textContent = sabo.title || 'Sabotagem';
+      const aliveNeeded = getAliveConnectedPlayers(playersObj).length;
+      const fixedCount = Object.keys(sabo.fixedBy || {}).length;
+      el('saboText').textContent = `${sabo.label || 'Algo aconteceu'} • 📍 ${sabo.place || 'Local indefinido'}`;
+      el('saboProgress').textContent = `${fixedCount}/${aliveNeeded} ajudaram`;
+      const canHelp = myStatus !== 'dead' && !(sabo.fixedBy && sabo.fixedBy[myPlayerId]);
+      el('btnFixSabo').classList.toggle('hidden', !canHelp);
+      el('btnFixSabo').disabled = !canHelp;
+      el('saboOverlay').classList.remove('hidden');
+    }
+    function hideSabo() { el('saboOverlay').classList.add('hidden'); }
+
+    function isAdmin(){ return localStorage.getItem('au_admin') === '1'; }
+
+    async function setupPresence(matchId, pid){
+      if (!db) return;
+      const playerRef = dbRef('matches', matchId, 'players', pid);
+      await dbUpdate(['matches', matchId, 'players', pid], { connected: true, lastSeen: Date.now() });
+      onDisconnect(playerRef).update({ connected: false, lastSeen: serverTimestamp() });
+    }
+
+    async function createMatch() {
+      if (configIncomplete) return toast('⚠️ Primeiro cole seu firebaseConfig.');
+      const totalPlayers = Math.max(3, Math.min(40, parseInt(el('adminTotal').value || '10', 10)));
+      const impostors = Math.max(1, parseInt(el('adminImpostors').value || '3', 10));
+      const sheriffs = Math.max(0, parseInt(el('adminSheriffs').value || '2', 10));
+      if (impostors + sheriffs >= totalPlayers) return toast('❌ Papéis especiais demais para esse total.');
+
+      const matchId = code();
+      await dbSet(['matches', matchId], {
+        id: matchId,
+        totalPlayers,
+        impostors,
+        sheriffs,
+        status: 'waiting',
+        createdAt: Date.now(),
+        players: {},
+        meeting: { active: false, votes: {}, finished: false },
+        sabotage: { active: false, fixedBy: {} },
+        winner: null
+      });
+
+      myMatchId = matchId;
+      localStorage.setItem('au_mid_admin', matchId);
+      localStorage.setItem('au_admin', '1');
+
+      el('adminCode').textContent = matchId;
+      el('adminCreated').classList.remove('hidden');
+      toast(`✅ Partida criada: ${matchId}`);
+
+      clearListeners();
+      dbListen(['matches', matchId, 'players'], (players) => {
+        const all = Object.values(players || {});
+        el('adminInfo').textContent = `${all.length}/${totalPlayers} conectados`;
+        el('adminPlayers').innerHTML = all.map(p => `<div class="item">${p.name}${p.connected === false ? ' (offline)' : ''}</div>`).join('') || '<div class="muted">Aguardando jogadores...</div>';
+      });
+    }
+
+    async function startMatch() {
+      const matchId = myMatchId || localStorage.getItem('au_mid_admin');
+      if (!matchId) return toast('❌ Crie a partida primeiro!');
+      const match = await dbGet(['matches', matchId]);
+      if (!match) return toast('❌ Partida não encontrada!');
+      const players = Object.values(match.players || {});
+      if (players.length < 3) return toast('❌ Mínimo 3 jogadores!');
+
+      const shuffled = shuffle(players);
+      const roles = [];
+      for (let i=0; i<match.impostors; i++) roles.push('IMPOSTOR');
+      for (let i=0; i<match.sheriffs; i++) roles.push('SHERIFF');
+      while (roles.length < shuffled.length) roles.push('TRIPULANTE');
+
+      const updates = {
+        [`matches/${matchId}/status`]: 'playing',
+        [`matches/${matchId}/startedAt`]: Date.now(),
+        [`matches/${matchId}/meeting`]: { active: false, votes: {}, finished: false },
+        [`matches/${matchId}/sabotage`]: { active: false, fixedBy: {} },
+        [`matches/${matchId}/winner`]: null
+      };
+
+      shuffled.forEach((p, i) => {
+        updates[`matches/${matchId}/players/${p.id}/role`] = roles[i];
+        updates[`matches/${matchId}/players/${p.id}/ejected`] = false;
+        updates[`matches/${matchId}/players/${p.id}/killCooldownUntil`] = 0;
+        updates[`matches/${matchId}/players/${p.id}/connected`] = true;
+        if (roles[i] !== 'IMPOSTOR') {
+          updates[`matches/${matchId}/players/${p.id}/tasks`] = makeTasks();
+        } else {
+          updates[`matches/${matchId}/players/${p.id}/tasks`] = {};
+        }
+      });
+
+      await update(ref(db), updates);
+      toast('🚀 Partida iniciada!');
+    }
+
+    async function joinMatch() {
+      if (configIncomplete) return toast('⚠️ Primeiro cole seu firebaseConfig.');
+      const name = el('joinName').value.trim();
+      const matchId = el('joinCode').value.trim().toUpperCase();
+      if (!name) return toast('✏️ Digite seu nome.');
+      if (!matchId) return toast('🔑 Digite o código da partida.');
+
+      const match = await dbGet(['matches', matchId]);
+      if (!match) return toast('❌ Partida não encontrada.');
+      if (match.status === 'finished') return toast('🏁 Partida encerrada.');
+
+      const savedPid = localStorage.getItem('au_pid');
+      const savedMid = localStorage.getItem('au_mid');
+      const existing = savedPid && savedMid === matchId ? await dbGet(['matches', matchId, 'players', savedPid]) : null;
+
+      if (existing) {
+        myPlayerId = savedPid;
+        myMatchId = matchId;
+        myName = existing.name || name;
+        myStatus = existing.status || 'alive';
+        localStorage.setItem('au_mid', matchId);
+        await dbUpdate(['matches', matchId, 'players', savedPid], { connected: true, lastSeen: Date.now() });
+        await setupPresence(matchId, savedPid);
+
+        if (match.status === 'waiting') {
+          watchLobby(matchId, savedPid);
+          showScreen('lobby-screen');
+          el('lobbyCode').textContent = matchId;
+          return;
+        }
+        if (match.status === 'playing' && existing.role) {
+          myRole = existing.role;
+          openRoleScreen(matchId, existing.role);
+          return;
+        }
+      }
+
+      if (match.status === 'playing') return toast('🚫 Partida já iniciada.');
+      const players = match.players || {};
+      if (Object.keys(players).length >= match.totalPlayers) return toast('🚫 Partida cheia.');
+
+      const pid = uid();
+      myPlayerId = pid;
+      myMatchId = matchId;
+      myName = name;
+      myStatus = 'alive';
+      localStorage.setItem('au_pid', pid);
+      localStorage.setItem('au_mid', matchId);
+
+      await dbSet(['matches', matchId, 'players', pid], {
+        id: pid,
+        name,
+        role: null,
+        status: 'alive',
+        joinedAt: Date.now(),
+        tasks: {},
+        connected: true,
+        lastSeen: Date.now(),
+        ejected: false,
+        killCooldownUntil: 0
+      });
+
+      await setupPresence(matchId, pid);
+      watchLobby(matchId, pid);
+      showScreen('lobby-screen');
+      el('lobbyCode').textContent = matchId;
+    }
+
+    function watchLobby(matchId, pid) {
+      clearListeners();
+      dbListen(['matches', matchId], (match) => {
+        if (!match) return;
+        const players = Object.values(match.players || {});
+        el('lobbyInfo').textContent = `${players.length}/${match.totalPlayers} conectados`;
+        el('lobbyPlayers').innerHTML = players.map(p => `<div class="item">${p.name}${p.connected === false ? ' (offline)' : ''}</div>`).join('') || '<div class="muted">Aguardando jogadores...</div>';
+
+        const me = (match.players || {})[pid];
+        if (match.status === 'playing' && me && me.role) {
+          myRole = me.role;
+          myName = me.name;
+          myStatus = me.status || 'alive';
+          openRoleScreen(matchId, me.role);
+        }
+        if (match.status === 'finished') showGameOver(matchId);
+      });
+    }
+
+    function updateKillCooldownUI(player){
+      const btn = el('impostorKill');
+      const text = el('killCooldownText');
+      if (!btn || myRole !== 'IMPOSTOR') return;
+      const until = Number(player?.killCooldownUntil || 0);
+      const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
+      if (remaining > 0) {
+        btn.disabled = true;
+        btn.textContent = `⏳ ${remaining}s`;
+        text.textContent = `Cooldown de kill: ${remaining}s restantes.`;
+      } else {
+        btn.disabled = myStatus === 'dead';
+        btn.textContent = '💀 Matar';
+        text.textContent = 'Cooldown de kill pronto.';
+      }
+    }
+
+    function toggleFakeCrewMode(){
+      if(myRole !== 'IMPOSTOR') return;
+      fakeCrewMode = !fakeCrewMode;
+      el('fakeCrewArea').classList.toggle('hidden', !fakeCrewMode);
+      el('realImpostorControls').classList.toggle('hidden', fakeCrewMode);
+      const btn = el('btnFakeCrew');
+      if (fakeCrewMode) {
+        btn.textContent = '😈 Voltar ao painel real';
+        el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
+        el('roleBadge').className = 'badge blue';
+        renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
+        toast('🧑‍🚀 Disfarce ativado');
+      } else {
+        btn.textContent = '🧑‍🚀 Fingir ser tripulante';
+        el('roleBadge').textContent = '😈 IMPOSTOR';
+        el('roleBadge').className = 'badge red';
+        toast('😈 Disfarce desativado');
+      }
+    }
+
+    function openRoleScreen(matchId, role) {
+      showScreen('role-screen');
+      setRoleUI(role);
+      clearListeners();
+      fakeCrewMode = false;
+      fakeCrewTasksCache = makeTasks();
+      el('fakeCrewArea').classList.add('hidden');
+      el('realImpostorControls').classList.remove('hidden');
+      el('btnFakeCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
+      selectedTargetId = null;
+      selectedVoteTarget = null;
+
+      dbListen(['matches', matchId, 'players', myPlayerId], (player) => {
+        myPlayerSnapshot = player;
+        myStatus = player?.status || 'alive';
+        el('roleStatus').textContent = myStatus === 'dead' ? 'MORTO' : 'VIVO';
+        if (myRole === 'IMPOSTOR') updateKillCooldownUI(player);
+      });
+
+      dbListen(['matches', matchId, 'meeting'], async (meeting) => {
+        if (meeting && meeting.active) {
+          showMeeting(meeting);
+          const players = await dbGet(['matches', matchId, 'players']);
+          renderMeetingVoting(players || {}, meeting);
+        } else {
+          hideMeeting();
+        }
+      });
+
+      dbListen(['matches', matchId, 'sabotage'], async (sabo) => {
+        if (sabo && sabo.active) {
+          const players = await dbGet(['matches', matchId, 'players']);
+          showSabo(sabo, players || {});
+        } else {
+          hideSabo();
+        }
+      });
+
+      dbListen(['matches', matchId, 'status'], async (status) => {
+        if (status === 'finished') showGameOver(matchId);
+      });
+
+      if (role === 'TRIPULANTE') {
+        dbListen(['matches', matchId, 'players', myPlayerId, 'tasks'], tasks => {
+          renderTaskList(tasks, 'crewTasks', 'crewProgressBar', 'crewProgressText', true);
+        });
+      }
+
+      if (role === 'SHERIFF') {
+        dbListen(['matches', matchId, 'players', myPlayerId, 'tasks'], tasks => {
+          renderTaskList(tasks, 'sheriffTasks', 'sheriffProgressBar', 'sheriffProgressText', true);
+        });
+        dbListen(['matches', matchId, 'players'], players => {
+          renderTargets(players || {}, 'sheriffTargets');
+        });
+      }
+
+      if (role === 'IMPOSTOR') {
+        renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
+        dbListen(['matches', matchId, 'players'], players => {
+          renderTargets(players || {}, 'impostorTargets');
+          const others = Object.values(players || {}).filter(p => p.role === 'IMPOSTOR' && p.id !== myPlayerId);
+          el('impostorTeam').innerHTML = others.length
+            ? others.map(p => `<div class="ally"><span>${p.status === 'dead' ? '💀' : '😈'} ${p.name}</span><span>${p.status === 'dead' ? 'MORTO' : (p.connected === false ? 'OFF' : 'VIVO')}</span></div>`).join('')
+            : '<div class="muted">Você é o único impostor.</div>';
+        });
+
+        setInterval(() => {
+          if (myRole === 'IMPOSTOR' && !el('role-screen').classList.contains('hidden')) {
+            updateKillCooldownUI(myPlayerSnapshot || {});
+          }
+        }, 1000);
+      }
+    }
+
+    async function reportBody() {
+      if (myStatus === 'dead') return toast('⚰️ Você está morto.');
+      const meeting = await dbGet(['matches', myMatchId, 'meeting']);
+      if (meeting && meeting.active) return toast('🚫 Já existe uma reunião.');
+      await dbSet(['matches', myMatchId, 'meeting'], {
+        active: true,
+        calledBy: myName,
+        at: Date.now(),
+        votes: {},
+        finished: false,
+        resultText: ''
+      });
+      toast('📣 Reunião iniciada!');
+    }
+
+    async function confirmMeetingVote() {
+      if (myStatus === 'dead') return toast('⚰️ Você está morto.');
+      if (!selectedVoteTarget) return toast('👆 Selecione alguém ou Skip primeiro.');
+      const meeting = await dbGet(['matches', myMatchId, 'meeting']);
+      if (!meeting || !meeting.active || meeting.finished) return toast('🚫 Não há votação ativa.');
+      if (meeting.votes && meeting.votes[myPlayerId]) return toast('🗳️ Você já votou.');
+
+      await dbUpdate(['matches', myMatchId, 'meeting', 'votes'], { [myPlayerId]: selectedVoteTarget });
+      toast(selectedVoteTarget === 'skip' ? '⏭️ Voto em Skip confirmado!' : '✅ Voto confirmado!');
+      const players = await dbGet(['matches', myMatchId, 'players']);
+      const refreshedMeeting = await dbGet(['matches', myMatchId, 'meeting']);
+      renderMeetingVoting(players || {}, refreshedMeeting || meeting);
+
+      const aliveCount = getAliveConnectedPlayers(players || {}).length;
+      const votesCount = Object.keys((refreshedMeeting && refreshedMeeting.votes) || {}).length;
+      if (votesCount >= aliveCount && aliveCount > 0) {
+        await finishMeetingVote();
+      }
+    }
+
+    async function finishMeetingVote() {
+      const meeting = await dbGet(['matches', myMatchId, 'meeting']);
+      const playersObj = await dbGet(['matches', myMatchId, 'players']);
+      if (!meeting || !meeting.active || meeting.finished) return;
+
+      const votes = meeting.votes || {};
+      const counts = {};
+      Object.values(votes).forEach(v => { counts[v] = (counts[v] || 0) + 1; });
+
+      let winner = null;
+      let maxVotes = 0;
+      let tie = false;
+      for (const [target, qty] of Object.entries(counts)) {
+        if (qty > maxVotes) {
+          maxVotes = qty;
+          winner = target;
+          tie = false;
+        } else if (qty === maxVotes) {
+          tie = true;
+        }
+      }
+
+      let resultText = '';
+      if (!winner || tie || winner === 'skip') {
+        resultText = winner === 'skip' && !tie ? '⏭️ Skip venceu. Ninguém foi ejetado.' : '⚖️ Empate! Ninguém foi ejetado.';
+      } else {
+        const targetPlayer = playersObj?.[winner];
+        if (targetPlayer) {
+          await dbUpdate(['matches', myMatchId, 'players', winner], { status: 'dead', ejected: true });
+          resultText = `🚪 ${targetPlayer.name} foi ejetado!`;
+        } else {
+          resultText = '⚠️ Votação encerrada sem ejeção.';
+        }
+      }
+
+      await dbSet(['matches', myMatchId, 'meeting'], {
+        active: false,
+        calledBy: meeting.calledBy,
+        at: meeting.at,
+        votes,
+        finished: true,
+        resultText
+      });
+      toast(resultText, 3500);
+      await checkWinConditions();
+    }
+
+    async function sheriffShoot() {
+      if (myStatus === 'dead') return toast('⚰️ Você está morto.');
+      const meeting = await dbGet(['matches', myMatchId, 'meeting']);
+      if (meeting?.active) return toast('🚫 Reunião em andamento.');
+      if (!selectedTargetId) return toast('👆 Escolha um alvo.');
+      const target = await dbGet(['matches', myMatchId, 'players', selectedTargetId]);
+      if (!target || target.status !== 'alive') return toast('❌ Alvo não encontrado.');
+
+      if (target.role === 'IMPOSTOR') {
+        await dbUpdate(['matches', myMatchId, 'players', selectedTargetId], { status: 'dead' });
+        toast(`🎯 ${target.name} era impostor!`);
+      } else {
+        await dbUpdate(['matches', myMatchId, 'players', myPlayerId], { status: 'dead' });
+        toast(`💀 Errou! ${target.name} não era impostor.`);
+      }
+      selectedTargetId = null;
+      await checkWinConditions();
+    }
+
+    async function impostorKill() {
+      if (myStatus === 'dead') return toast('⚰️ Você está morto.');
+      const meeting = await dbGet(['matches', myMatchId, 'meeting']);
+      if (meeting?.active) return toast('🚫 Reunião em andamento.');
+      if (!selectedTargetId) return toast('👆 Escolha um alvo.');
+      const me = await dbGet(['matches', myMatchId, 'players', myPlayerId]);
+      const now = Date.now();
+      const cooldownUntil = Number(me?.killCooldownUntil || 0);
+      if (cooldownUntil > now) return toast(`⏳ Aguarde ${Math.ceil((cooldownUntil - now)/1000)}s.`);
+
+      const target = await dbGet(['matches', myMatchId, 'players', selectedTargetId]);
+      if (!target || target.status !== 'alive') return toast('❌ Alvo não encontrado.');
+
+      await dbUpdate(['matches', myMatchId, 'players', selectedTargetId], { status: 'dead' });
+      await dbUpdate(['matches', myMatchId, 'players', myPlayerId], { killCooldownUntil: Date.now() + 30000 });
+      toast(`💀 ${target.name} foi eliminado.`);
+      selectedTargetId = null;
+      await checkWinConditions();
+    }
+
+    async function activateSabotage(type) {
+      if (myStatus === 'dead') return toast('⚰️ Você está morto.');
+      const meeting = await dbGet(['matches', myMatchId, 'meeting']);
+      if (meeting?.active) return toast('🚫 Reunião em andamento.');
+      const cfg = SABOTAGE_MAP[type];
+      if (!cfg) return toast('❌ Sabotagem inválida.');
+      await dbSet(['matches', myMatchId, 'sabotage'], {
+        active: true,
+        type,
+        title: cfg.title,
+        label: cfg.label,
+        place: cfg.place,
+        by: myName,
+        at: Date.now(),
+        fixedBy: {}
+      });
+      el('saboPanel').classList.add('hidden');
+      toast('⚡ Sabotagem ativada!');
+    }
+
+    async function helpFixSabotage(){
+      if (myStatus === 'dead') return toast('⚰️ Você está morto.');
+      const sabo = await dbGet(['matches', myMatchId, 'sabotage']);
+      if (!sabo || !sabo.active) return toast('✅ Nada para corrigir.');
+      if (sabo.fixedBy && sabo.fixedBy[myPlayerId]) return toast('🔧 Você já ajudou.');
+
+      await dbUpdate(['matches', myMatchId, 'sabotage', 'fixedBy'], { [myPlayerId]: true });
+      const players = await dbGet(['matches', myMatchId, 'players']);
+      const aliveNeeded = getAliveConnectedPlayers(players || {}).length;
+      const freshSabo = await dbGet(['matches', myMatchId, 'sabotage']);
+      const fixedCount = Object.keys(freshSabo?.fixedBy || {}).length;
+      toast('🔧 Você ajudou a corrigir!');
+      if (fixedCount >= aliveNeeded && aliveNeeded > 0) {
+        await dbSet(['matches', myMatchId, 'sabotage'], { active: false, fixedBy: {} });
+        toast('✅ Sabotagem corrigida por todos!');
+      }
+    }
+
+    async function endMeeting(){
+      await finishMeetingVote();
+    }
+
+    async function endGame() {
+      const matchId = myMatchId || localStorage.getItem('au_mid_admin');
+      if (!matchId) return;
+      await dbUpdate(['matches', matchId], { status: 'finished', winner: 'MANUAL' });
+      toast('🏁 Partida encerrada.');
+    }
+
+    async function checkWinConditions() {
+      const match = await dbGet(['matches', myMatchId]);
+      const playersObj = match?.players || {};
+      const aliveConnected = getAliveConnectedPlayers(playersObj);
+      const aliveImpostors = aliveConnected.filter(p => p.role === 'IMPOSTOR');
+      const aliveCrew = aliveConnected.filter(p => p.role !== 'IMPOSTOR');
+
+      if (aliveImpostors.length === 0) {
+        await dbUpdate(['matches', myMatchId], { status: 'finished', winner: 'CREW_ELIMINATION' });
+        return true;
+      }
+
+      if (aliveImpostors.length >= aliveCrew.length && aliveCrew.length > 0) {
+        await dbUpdate(['matches', myMatchId], { status: 'finished', winner: 'IMPOSTOR' });
+        return true;
+      }
+
+      const aliveNonImpostors = Object.values(playersObj).filter(p => p.role !== 'IMPOSTOR' && p.status === 'alive');
+      if (aliveNonImpostors.length > 0) {
+        const allTasksDone = aliveNonImpostors.every(p => {
+          const tasks = Object.values(p.tasks || {});
+          return tasks.length > 0 && tasks.every(t => t.done === true);
+        });
+        if (allTasksDone) {
+          await dbUpdate(['matches', myMatchId], { status: 'finished', winner: 'CREW_TASKS' });
+          return true;
+        }
+      }
+      return false;
+    }
+
+    async function showGameOver(matchId) {
+      clearListeners();
+      showScreen('gameover-screen');
+      const match = await dbGet(['matches', matchId]);
+      const players = Object.values(match?.players || {});
+      const winnerMap = {
+        CREW_ELIMINATION: 'Tripulantes + Sheriffs venceram (todos os impostores foram mortos/ejetados).',
+        CREW_TASKS: 'Tripulantes + Sheriffs venceram (todas as tasks foram concluídas).',
+        IMPOSTOR: 'Impostores venceram (maioria alcançada).',
+        MANUAL: 'Partida encerrada manualmente.'
+      };
+      el('gameoverSubtitle').textContent = winnerMap[match?.winner] || 'Papéis revelados';
+      el('gameoverList').innerHTML = players.map(p => `
+        <div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+          <span>${ROLE_CFG[p.role]?.icon || '👤'} ${p.name}${p.ejected ? ' (ejetado)' : ''}</span>
+          <span class="badge ${p.role === 'IMPOSTOR' ? 'red' : p.role === 'SHERIFF' ? 'yellow' : 'blue'}">${p.role || '?'}</span>
+          <span>${p.status === 'dead' ? '💀' : '✅'}</span>
+        </div>
+      `).join('') || '<div class="muted">Sem jogadores.</div>';
+    }
+
+
+    function resetSessionAndGoHome() {
+      localStorage.removeItem('au_pid');
+      localStorage.removeItem('au_mid');
+      localStorage.removeItem('au_admin');
+      localStorage.removeItem('au_mid_admin');
+      myPlayerId = null;
+      myMatchId = null;
+      myRole = null;
+      myName = null;
+      myStatus = 'alive';
+      selectedTargetId = null;
+      selectedVoteTarget = null;
+      fakeCrewMode = false;
+      myPlayerSnapshot = null;
+      clearListeners();
+      location.reload();
+    }
+
+    async function tryReconnect() {
+      if (configIncomplete) return false;
+      const pid = localStorage.getItem('au_pid');
+      const mid = localStorage.getItem('au_mid');
+      if (!pid || !mid) return false;
+      const player = await dbGet(['matches', mid, 'players', pid]);
+      const match = await dbGet(['matches', mid]);
+      if (!player || !match) return false;
+
+      myPlayerId = pid;
+      myMatchId = mid;
+      myRole = player.role;
+      myName = player.name;
+      myStatus = player.status || 'alive';
+      await dbUpdate(['matches', mid, 'players', pid], { connected: true, lastSeen: Date.now() });
+      await setupPresence(mid, pid);
+
+      if (match.status === 'waiting') {
+        watchLobby(mid, pid);
+        showScreen('lobby-screen');
+        el('lobbyCode').textContent = mid;
+        return true;
+      }
+      if (match.status === 'playing' && player.role) {
+        openRoleScreen(mid, player.role);
+        return true;
+      }
+      if (match.status === 'finished') {
+        localStorage.removeItem('au_pid');
+        localStorage.removeItem('au_mid');
+        localStorage.removeItem('au_admin');
+        localStorage.removeItem('au_mid_admin');
+        return false;
+      }
+      return false;
+    }
+
+    (function stars(){
+      const cv = document.getElementById('bg-canvas');
+      const cx = cv.getContext('2d');
+      let pts = [];
+      function resize(){ cv.width = innerWidth; cv.height = innerHeight; }
+      function init(){
+        pts = Array.from({length:100},()=>({
+          x: Math.random()*cv.width,
+          y: Math.random()*cv.height,
+          r: Math.random()*1.2+.2,
+          s: Math.random()*.003+.001,
+          p: Math.random()*Math.PI*2
+        }));
+      }
+      function draw(t){
+        cx.clearRect(0,0,cv.width,cv.height);
+        pts.forEach(a=>{
+          const alpha = .3+.7*Math.abs(Math.sin(t*a.s+a.p));
+          cx.beginPath();
+          cx.arc(a.x,a.y,a.r,0,Math.PI*2);
+          cx.fillStyle = `rgba(180,180,255,${alpha})`;
+          cx.fill();
+        });
+        requestAnimationFrame(draw);
+      }
+      resize(); init(); requestAnimationFrame(draw);
+      window.addEventListener('resize', ()=>{ resize(); init(); });
+    })();
+
+    el('btnGoAdmin').onclick = () => showScreen('admin-screen');
+    el('btnBackJoin').onclick = () => showScreen('join-screen');
+    el('btnCreate').onclick = createMatch;
+    el('btnStart').onclick = startMatch;
+    el('btnEnd').onclick = endGame;
+    el('btnJoin').onclick = joinMatch;
+    el('crewReport').onclick = reportBody;
+    el('sheriffReport').onclick = reportBody;
+    el('impostorReport').onclick = reportBody;
+    el('sheriffShoot').onclick = sheriffShoot;
+    el('impostorKill').onclick = impostorKill;
+    el('btnToggleSabo').onclick = () => el('saboPanel').classList.toggle('hidden');
+    el('saboPanel').querySelectorAll('[data-sabo]').forEach(btn => btn.onclick = () => activateSabotage(btn.dataset.sabo));
+    el('btnFixSabo').onclick = helpFixSabotage;
+    el('btnEndMeeting').onclick = endMeeting;
+    el('btnConfirmVote').onclick = confirmMeetingVote;
+    el('btnReload').onclick = resetSessionAndGoHome;
+    el('btnFakeCrew').onclick = toggleFakeCrewMode;
+
+    if (configIncomplete) {
+      showScreen('join-screen');
+      toast('⚠️ Cole seu firebaseConfig no arquivo.', 5000);
+    } else {
+      const ok = await tryReconnect();
+      if (!ok) showScreen('join-screen');
+    }
+  </script>
+</body>
+</html>
