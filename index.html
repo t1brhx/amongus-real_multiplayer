@@ -294,6 +294,7 @@
       <div class="muted" id="lobbyInfo">0/0 conectados</div>
       <div class="list" id="lobbyPlayers"></div>
       <div class="muted">⏳ Esperando o admin iniciar...</div>
+      <button class="btn-secondary" id="btnLeaveLobby">↩️ Sair do lobby</button>
     </div>
   </div>
 
@@ -1159,6 +1160,36 @@
     }
 
 
+    async function leaveLobby() {
+      try {
+        if (myMatchId && myPlayerId) {
+          const match = await dbGet(['matches', myMatchId]);
+          if (match && match.status === 'waiting') {
+            await remove(dbRef('matches', myMatchId, 'players', myPlayerId));
+          } else if (myMatchId && myPlayerId) {
+            await dbUpdate(['matches', myMatchId, 'players', myPlayerId], { connected: false, lastSeen: Date.now() });
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      localStorage.removeItem('au_pid');
+      localStorage.removeItem('au_mid');
+      myPlayerId = null;
+      myMatchId = null;
+      myRole = null;
+      myName = null;
+      myStatus = 'alive';
+      selectedTargetId = null;
+      selectedVoteTarget = null;
+      fakeCrewMode = false;
+      myPlayerSnapshot = null;
+      clearListeners();
+      showScreen('join-screen');
+      toast('↩️ Você saiu do lobby.');
+    }
+
     function resetSessionAndGoHome() {
       localStorage.removeItem('au_pid');
       localStorage.removeItem('au_mid');
@@ -1260,6 +1291,7 @@
     el('btnEndMeeting').onclick = endMeeting;
     el('btnConfirmVote').onclick = confirmMeetingVote;
     el('btnReload').onclick = resetSessionAndGoHome;
+    el('btnLeaveLobby').onclick = leaveLobby;
     el('btnFakeCrew').onclick = toggleFakeCrewMode;
 
     if (configIncomplete) {
