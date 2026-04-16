@@ -254,8 +254,7 @@
       border: 1px solid rgba(124,92,191,.16);
       border-radius: 14px;
       padding: 10px 10px 12px;
-      max-height: 300px;
-      overflow: hidden;
+      overflow: visible;
     }
     .color-picker-title {
       color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: 2px;
@@ -263,7 +262,10 @@
     }
     .color-grid {
       display:grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap:8px;
-      max-height: 220px; overflow-y:auto; padding-right:4px;
+      padding-right:4px;
+    }
+    @media (max-width: 700px) {
+      .color-grid { grid-template-columns: repeat(5, minmax(0,1fr)); }
     }
     .color-swatch {
       width:100%; aspect-ratio:1/1; border-radius:12px; border:2px solid rgba(255,255,255,.12);
@@ -326,7 +328,7 @@
       <div class="muted" id="lobbyInfo">0/0 conectados</div>
       <div class="list" id="lobbyPlayers"></div>
       <div class="color-picker-wrap" id="lobbyColorWrap">
-        <div class="color-picker-title">🎨 Escolha sua cor no lobby</div>
+        <div class="color-picker-title">🎨 Escolha sua cor no lobby (40 opções)</div>
         <div id="lobbyColorPicker" class="color-grid"></div>
         <div id="lobbyColorText" class="color-swatch-label">Escolha uma cor livre</div>
       </div>
