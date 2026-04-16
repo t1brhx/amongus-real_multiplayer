@@ -484,7 +484,6 @@
     </div>
   </div>
 
-
   <div id="deadOverlay" class="overlay hidden">
     <div class="overlay-card">
       <div class="big-emoji">💀</div>
@@ -840,11 +839,13 @@
     }
 
     function showDeadOverlay() {
-      el('deadOverlay').classList.remove('hidden');
+      const ov = el('deadOverlay');
+      if (ov) ov.classList.remove('hidden');
     }
 
     function hideDeadOverlay() {
-      el('deadOverlay').classList.add('hidden');
+      const ov = el('deadOverlay');
+      if (ov) ov.classList.add('hidden');
     }
 
     function showSabo(sabo, playersObj) {
