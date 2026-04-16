@@ -484,6 +484,15 @@
     </div>
   </div>
 
+
+  <div id="deadOverlay" class="overlay hidden">
+    <div class="overlay-card">
+      <div class="big-emoji">💀</div>
+      <div class="big-title" style="color:#e8192c;">Você morreu</div>
+      <div class="muted">Agora você está em modo espectador.</div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script type="module">
@@ -830,6 +839,14 @@
       el('meetingSelectedText').textContent = 'Selecione alguém ou Skip.';
     }
 
+    function showDeadOverlay() {
+      el('deadOverlay').classList.remove('hidden');
+    }
+
+    function hideDeadOverlay() {
+      el('deadOverlay').classList.add('hidden');
+    }
+
     function showSabo(sabo, playersObj) {
       el('saboTitle').textContent = sabo.title || 'Sabotagem';
       const aliveNeeded = getAliveConnectedPlayers(playersObj).length;
@@ -1078,11 +1095,21 @@
       if (roleScroll) roleScroll.scrollTop = 0;
       selectedTargetId = null;
       selectedVoteTarget = null;
+      hideDeadOverlay();
 
       dbListen(['matches', matchId, 'players', myPlayerId], (player) => {
+        const prevStatus = myStatus;
         myPlayerSnapshot = player;
         myStatus = player?.status || 'alive';
         el('roleStatus').textContent = myStatus === 'dead' ? 'MORTO' : 'VIVO';
+
+        if (myStatus === 'dead') {
+          showDeadOverlay();
+          if (prevStatus !== 'dead') toast('💀 Você morreu');
+        } else {
+          hideDeadOverlay();
+        }
+
         if (myRole === 'IMPOSTOR') updateKillCooldownUI(player);
       });
 
@@ -1345,6 +1372,7 @@
 
     async function showGameOver(matchId) {
       clearListeners();
+      hideDeadOverlay();
       showScreen('gameover-screen');
       const match = await dbGet(['matches', matchId]);
       const players = Object.values(match?.players || {});
