@@ -242,6 +242,35 @@
 
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-thumb { background: rgba(167,139,250,.55); border-radius: 999px; }
+  
+    .player-row { display:flex; align-items:center; gap:10px; }
+    .player-color-dot {
+      width:16px; height:16px; border-radius:50%; flex-shrink:0;
+      border:2px solid rgba(255,255,255,.18); box-shadow:0 0 10px rgba(255,255,255,.08);
+    }
+    .color-picker-wrap {
+      margin-top: 4px;
+      background: rgba(124,92,191,.08);
+      border: 1px solid rgba(124,92,191,.16);
+      border-radius: 14px;
+      padding: 10px 10px 12px;
+    }
+    .color-picker-title {
+      color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .color-grid {
+      display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:8px;
+    }
+    .color-swatch {
+      width:100%; aspect-ratio:1/1; border-radius:12px; border:2px solid rgba(255,255,255,.12);
+      cursor:pointer; position:relative; transition:transform .12s ease, border-color .18s ease, opacity .18s ease;
+    }
+    .color-swatch:hover { transform:scale(1.03); }
+    .color-swatch.selected { border-color:#fff; box-shadow:0 0 0 2px rgba(255,255,255,.12) inset; }
+    .color-swatch.taken { opacity:.28; cursor:not-allowed; filter:grayscale(.15); }
+    .color-swatch-label { font-size:.74rem; color:var(--muted); text-align:center; margin-top:8px; }
+
   </style>
 </head>
 <body>
@@ -293,6 +322,11 @@
       <div class="code" id="lobbyCode">------</div>
       <div class="muted" id="lobbyInfo">0/0 conectados</div>
       <div class="list" id="lobbyPlayers"></div>
+      <div class="color-picker-wrap">
+        <div class="color-picker-title">Sua cor no lobby</div>
+        <div id="lobbyColorPicker" class="color-grid"></div>
+        <div id="lobbyColorText" class="color-swatch-label">Escolha uma cor livre</div>
+      </div>
       <button class="btn-secondary" id="btnLeaveLobby">↩️ Sair do lobby</button>
       <div class="muted">⏳ Esperando o admin iniciar...</div>
     </div>
@@ -459,6 +493,21 @@
       task:      { title:'⚠️ SISTEMA CRÍTICO',          label:'Vá para o PENTÁGONO agora!',  place:'Pentágono' }
     };
 
+    const PLAYER_COLORS = [
+      { key:'red', label:'Vermelho', hex:'#ef4444' },
+      { key:'blue', label:'Azul', hex:'#3b82f6' },
+      { key:'green', label:'Verde', hex:'#22c55e' },
+      { key:'yellow', label:'Amarelo', hex:'#facc15' },
+      { key:'pink', label:'Rosa', hex:'#ec4899' },
+      { key:'black', label:'Preto', hex:'#18181b' },
+      { key:'white', label:'Branco', hex:'#f8fafc' },
+      { key:'purple', label:'Roxo', hex:'#a855f7' },
+      { key:'orange', label:'Laranja', hex:'#f97316' },
+      { key:'cyan', label:'Ciano', hex:'#06b6d4' },
+      { key:'brown', label:'Marrom', hex:'#8b5e3c' },
+      { key:'lime', label:'Lima', hex:'#84cc16' }
+    ];
+
     const ROLE_CFG = {
       IMPOSTOR:  { icon:'😈', color:'#e8192c', desc:'Mata, sabota e se mistura.' },
       SHERIFF:   { icon:'🔫', color:'#f5c518', desc:'Pode atirar em suspeitos.' },
@@ -475,6 +524,7 @@
     let listeners = [];
     let fakeCrewMode = false;
     let myPlayerSnapshot = null;
+    let myColor = null;
     let fakeCrewTasksCache = makeTasks();
 
     const el = id => document.getElementById(id);
@@ -514,6 +564,71 @@
       const out = {};
       chosen.forEach(t => out[t.id] = {...t, done:false});
       return out;
+    }
+
+
+    function getColorHex(colorKey){
+      return PLAYER_COLORS.find(c => c.key === colorKey)?.hex || '#7c5cbf';
+    }
+
+    function getColorLabel(colorKey){
+      return PLAYER_COLORS.find(c => c.key === colorKey)?.label || 'Sem cor';
+    }
+
+    function getContrastForColor(colorKey){
+      return ['white','yellow','lime'].includes(colorKey) ? '#11111e' : '#fff';
+    }
+
+    function getTakenColors(playersObj, excludePid=null){
+      return new Set(Object.values(playersObj || {})
+        .filter(p => p && p.color && p.id !== excludePid)
+        .map(p => p.color));
+    }
+
+    function getFirstFreeColor(playersObj, excludePid=null){
+      const taken = getTakenColors(playersObj, excludePid);
+      const free = PLAYER_COLORS.find(c => !taken.has(c.key));
+      return free ? free.key : PLAYER_COLORS[0].key;
+    }
+
+    function renderPlayerList(players, elementId){
+      const target = el(elementId);
+      if (!target) return;
+      target.innerHTML = players.map(p => `
+        <div class="item">
+          <div class="player-row">
+            <span class="player-color-dot" style="background:${getColorHex(p.color)}"></span>
+            <span class="player-row-name">${p.name}${p.connected === false ? ' (offline)' : ''}</span>
+          </div>
+        </div>
+      `).join('') || '<div class="muted">Aguardando jogadores...</div>';
+    }
+
+    function renderLobbyColorPicker(playersObj){
+      const wrap = el('lobbyColorPicker');
+      const textEl = el('lobbyColorText');
+      if (!wrap || !myPlayerId) return;
+      const taken = getTakenColors(playersObj, myPlayerId);
+      wrap.innerHTML = PLAYER_COLORS.map(c => {
+        const takenByOther = taken.has(c.key);
+        const selected = myColor === c.key;
+        return `<button type="button" class="color-swatch ${selected ? 'selected' : ''} ${takenByOther ? 'taken' : ''}" data-color="${c.key}" style="background:${c.hex}" ${takenByOther ? 'disabled' : ''} aria-label="${c.label}"></button>`;
+      }).join('');
+      textEl.textContent = myColor ? `Sua cor: ${getColorLabel(myColor)}` : 'Escolha uma cor livre';
+      wrap.querySelectorAll('[data-color]').forEach(btn => {
+        btn.onclick = () => changeMyColor(btn.dataset.color);
+      });
+    }
+
+    async function changeMyColor(colorKey){
+      if (!myMatchId || !myPlayerId) return;
+      const match = await dbGet(['matches', myMatchId]);
+      if (!match || match.status !== 'waiting') return toast('🎨 Só dá para trocar cor no lobby.');
+      const taken = getTakenColors(match.players || {}, myPlayerId);
+      if (taken.has(colorKey)) return toast('❌ Essa cor já foi escolhida.');
+      myColor = colorKey;
+      await dbUpdate(['matches', myMatchId, 'players', myPlayerId], { color: colorKey, lastSeen: Date.now() });
+      toast(`🎨 Cor alterada para ${getColorLabel(colorKey)}.`);
     }
 
     function getAliveConnectedPlayers(playersObj){
@@ -578,7 +693,7 @@
       }
       cont.innerHTML = alive.map(p => `
         <div class="target ${selectedTargetId === p.id ? 'selected' : ''}" data-id="${p.id}">
-          <div class="target-avatar">${(p.name || '?')[0].toUpperCase()}</div>
+          <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
           <div class="target-name">${p.name}</div>
         </div>
       `).join('');
@@ -605,7 +720,7 @@
         </div>
         ${alivePlayers.map(p => `
           <div class="target ${selectedVoteTarget === p.id ? 'selected' : ''} ${alreadyVoted ? 'disabled' : ''}" data-vote="${p.id}">
-            <div class="target-avatar">${(p.name || '?')[0].toUpperCase()}</div>
+            <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
             <div class="target-name">${p.name}</div>
           </div>
         `).join('')}
@@ -696,7 +811,7 @@
       dbListen(['matches', matchId, 'players'], (players) => {
         const all = Object.values(players || {});
         el('adminInfo').textContent = `${all.length}/${totalPlayers} conectados`;
-        el('adminPlayers').innerHTML = all.map(p => `<div class="item">${p.name}${p.connected === false ? ' (offline)' : ''}</div>`).join('') || '<div class="muted">Aguardando jogadores...</div>';
+        renderPlayerList(all, 'adminPlayers');
       });
     }
 
@@ -758,8 +873,9 @@
         myMatchId = matchId;
         myName = existing.name || name;
         myStatus = existing.status || 'alive';
+        myColor = existing.color || getFirstFreeColor(match.players || {}, savedPid);
         localStorage.setItem('au_mid', matchId);
-        await dbUpdate(['matches', matchId, 'players', savedPid], { connected: true, lastSeen: Date.now() });
+        await dbUpdate(['matches', matchId, 'players', savedPid], { connected: true, lastSeen: Date.now(), color: myColor });
         await setupPresence(matchId, savedPid);
 
         if (match.status === 'waiting') {
@@ -812,13 +928,16 @@
         if (!match) return;
         const players = Object.values(match.players || {});
         el('lobbyInfo').textContent = `${players.length}/${match.totalPlayers} conectados`;
-        el('lobbyPlayers').innerHTML = players.map(p => `<div class="item">${p.name}${p.connected === false ? ' (offline)' : ''}</div>`).join('') || '<div class="muted">Aguardando jogadores...</div>';
+        renderPlayerList(players, 'lobbyPlayers');
 
         const me = (match.players || {})[pid];
+        if (me) myColor = me.color || null;
+        renderLobbyColorPicker(match.players || {});
         if (match.status === 'playing' && me && me.role) {
           myRole = me.role;
           myName = me.name;
           myStatus = me.status || 'alive';
+          myColor = me.color || null;
           openRoleScreen(matchId, me.role);
         }
         if (match.status === 'finished') showGameOver(matchId);
@@ -1152,7 +1271,7 @@
       el('gameoverSubtitle').textContent = winnerMap[match?.winner] || 'Papéis revelados';
       el('gameoverList').innerHTML = players.map(p => `
         <div class="item" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-          <span>${ROLE_CFG[p.role]?.icon || '👤'} ${p.name}${p.ejected ? ' (ejetado)' : ''}</span>
+          <span><span class="player-color-dot" style="display:inline-block; width:12px; height:12px; margin-right:8px; vertical-align:middle; background:${getColorHex(p.color)}"></span>${ROLE_CFG[p.role]?.icon || '👤'} ${p.name}${p.ejected ? ' (ejetado)' : ''}</span>
           <span class="badge ${p.role === 'IMPOSTOR' ? 'red' : p.role === 'SHERIFF' ? 'yellow' : 'blue'}">${p.role || '?'}</span>
           <span>${p.status === 'dead' ? '💀' : '✅'}</span>
         </div>
@@ -1185,6 +1304,7 @@
       selectedVoteTarget = null;
       fakeCrewMode = false;
       myPlayerSnapshot = null;
+      myColor = null;
       clearListeners();
       showScreen('join-screen');
       toast('↩️ Você saiu do lobby.');
@@ -1204,6 +1324,7 @@
       selectedVoteTarget = null;
       fakeCrewMode = false;
       myPlayerSnapshot = null;
+      myColor = null;
       clearListeners();
       location.reload();
     }
@@ -1222,6 +1343,7 @@
       myRole = player.role;
       myName = player.name;
       myStatus = player.status || 'alive';
+      myColor = player.color || null;
       await dbUpdate(['matches', mid, 'players', pid], { connected: true, lastSeen: Date.now() });
       await setupPresence(mid, pid);
 
