@@ -38,7 +38,8 @@
       overflow-y: auto;
       transition: opacity .28s ease, transform .28s ease;
     }
-    .hidden { opacity: 0; pointer-events: none; transform: scale(.98); }
+    .screen.hidden { opacity: 0; pointer-events: none; transform: scale(.98); }
+    .hidden { display: none !important; }
 
     .card {
       width: 100%; max-width: 430px;
@@ -72,18 +73,17 @@
       flex-direction: column;
       gap: 12px;
     }
-    .impostor-disguise-btn {
-      margin-top: 4px;
-      width: 100%;
-      align-self: stretch;
-      opacity: .82;
-      order: 99;
-    }
     #realImpostorControls, #fakeCrewArea {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
+    .impostor-disguise-btn {
+      margin-top: 4px;
+      width: 100%;
+      align-self: stretch;
+    }
+
 
     .title {
       font-family: 'Orbitron', sans-serif;
