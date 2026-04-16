@@ -254,13 +254,16 @@
       border: 1px solid rgba(124,92,191,.16);
       border-radius: 14px;
       padding: 10px 10px 12px;
+      max-height: 300px;
+      overflow: hidden;
     }
     .color-picker-title {
       color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: 2px;
       text-transform: uppercase; margin-bottom: 8px;
     }
     .color-grid {
-      display:grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap:8px;
+      display:grid; grid-template-columns: repeat(8, minmax(0,1fr)); gap:8px;
+      max-height: 220px; overflow-y:auto; padding-right:4px;
     }
     .color-swatch {
       width:100%; aspect-ratio:1/1; border-radius:12px; border:2px solid rgba(255,255,255,.12);
@@ -495,17 +498,45 @@
 
     const PLAYER_COLORS = [
       { key:'red', label:'Vermelho', hex:'#ef4444' },
-      { key:'blue', label:'Azul', hex:'#3b82f6' },
-      { key:'green', label:'Verde', hex:'#22c55e' },
-      { key:'yellow', label:'Amarelo', hex:'#facc15' },
+      { key:'crimson', label:'Carmesim', hex:'#dc143c' },
+      { key:'rose', label:'Rosé', hex:'#f43f5e' },
       { key:'pink', label:'Rosa', hex:'#ec4899' },
-      { key:'black', label:'Preto', hex:'#18181b' },
-      { key:'white', label:'Branco', hex:'#f8fafc' },
+      { key:'magenta', label:'Magenta', hex:'#d946ef' },
       { key:'purple', label:'Roxo', hex:'#a855f7' },
-      { key:'orange', label:'Laranja', hex:'#f97316' },
+      { key:'violet', label:'Violeta', hex:'#7c3aed' },
+      { key:'indigo', label:'Índigo', hex:'#4f46e5' },
+      { key:'blue', label:'Azul', hex:'#3b82f6' },
+      { key:'sky', label:'Azul Céu', hex:'#0ea5e9' },
       { key:'cyan', label:'Ciano', hex:'#06b6d4' },
+      { key:'teal', label:'Turquesa', hex:'#14b8a6' },
+      { key:'mint', label:'Menta', hex:'#2dd4bf' },
+      { key:'green', label:'Verde', hex:'#22c55e' },
+      { key:'emerald', label:'Esmeralda', hex:'#10b981' },
+      { key:'lime', label:'Lima', hex:'#84cc16' },
+      { key:'olive', label:'Oliva', hex:'#65a30d' },
+      { key:'yellow', label:'Amarelo', hex:'#facc15' },
+      { key:'amber', label:'Âmbar', hex:'#f59e0b' },
+      { key:'gold', label:'Dourado', hex:'#eab308' },
+      { key:'orange', label:'Laranja', hex:'#f97316' },
+      { key:'tangerine', label:'Tangerina', hex:'#fb923c' },
+      { key:'coral', label:'Coral', hex:'#fb7185' },
       { key:'brown', label:'Marrom', hex:'#8b5e3c' },
-      { key:'lime', label:'Lima', hex:'#84cc16' }
+      { key:'coffee', label:'Café', hex:'#6f4e37' },
+      { key:'chocolate', label:'Chocolate', hex:'#7c2d12' },
+      { key:'sand', label:'Areia', hex:'#d6b48a' },
+      { key:'white', label:'Branco', hex:'#f8fafc' },
+      { key:'silver', label:'Prata', hex:'#cbd5e1' },
+      { key:'gray', label:'Cinza', hex:'#94a3b8' },
+      { key:'slate', label:'Ardósia', hex:'#64748b' },
+      { key:'charcoal', label:'Carvão', hex:'#334155' },
+      { key:'black', label:'Preto', hex:'#18181b' },
+      { key:'navy', label:'Marinho', hex:'#1e3a8a' },
+      { key:'plum', label:'Ameixa', hex:'#7e22ce' },
+      { key:'lavender', label:'Lavanda', hex:'#c4b5fd' },
+      { key:'peach', label:'Pêssego', hex:'#fdba74' },
+      { key:'salmon', label:'Salmão', hex:'#fa8072' },
+      { key:'jade', label:'Jade', hex:'#00a86b' },
+      { key:'aqua', label:'Água', hex:'#7dd3fc' }
     ];
 
     const ROLE_CFG = {
