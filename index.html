@@ -1014,6 +1014,7 @@
     function toggleFakeCrewMode(){
       if(myRole !== 'IMPOSTOR') return;
       fakeCrewMode = !fakeCrewMode;
+      const roleScroll = document.querySelector('#roleCard .role-scroll');
       el('fakeCrewArea').classList.toggle('hidden', !fakeCrewMode);
       el('realImpostorControls').classList.toggle('hidden', fakeCrewMode);
       const btn = el('btnFakeCrew');
@@ -1022,11 +1023,13 @@
         el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
         el('roleBadge').className = 'badge blue';
         renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
+        if (roleScroll) roleScroll.scrollTop = 0;
         toast('🧑‍🚀 Disfarce ativado');
       } else {
         btn.textContent = '🧑‍🚀 Fingir ser tripulante';
         el('roleBadge').textContent = '😈 IMPOSTOR';
         el('roleBadge').className = 'badge red';
+        if (roleScroll) roleScroll.scrollTop = 0;
         toast('😈 Disfarce desativado');
       }
     }
@@ -1040,6 +1043,8 @@
       el('fakeCrewArea').classList.add('hidden');
       el('realImpostorControls').classList.remove('hidden');
       el('btnFakeCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
+      const roleScroll = document.querySelector('#roleCard .role-scroll');
+      if (roleScroll) roleScroll.scrollTop = 0;
       selectedTargetId = null;
       selectedVoteTarget = null;
 
