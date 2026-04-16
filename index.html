@@ -67,6 +67,23 @@
       overflow-y: auto;
       padding-right: 4px;
     }
+    #impostorArea {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .impostor-disguise-btn {
+      margin-top: 4px;
+      width: 100%;
+      align-self: stretch;
+      opacity: .82;
+      order: 99;
+    }
+    #realImpostorControls, #fakeCrewArea {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
 
     .title {
       font-family: 'Orbitron', sans-serif;
@@ -370,8 +387,6 @@
         </div>
 
         <div id="impostorArea" class="hidden">
-          <button class="btn-secondary" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
-
           <div id="realImpostorControls">
             <div class="field-label">Selecionar alvo</div>
             <div class="targets" id="impostorTargets"></div>
@@ -396,6 +411,8 @@
             <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
             <div class="tasks" id="fakeCrewTasks"></div>
           </div>
+
+          <button class="btn-secondary impostor-disguise-btn" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
         </div>
       </div>
     </div>
