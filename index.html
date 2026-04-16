@@ -89,13 +89,19 @@
       flex-direction: column;
       gap: 10px;
     }
-    .impostor-disguise-btn {
+    .impostor-disguise-btn-real {
       margin-top: auto;
       width: 100%;
       align-self: stretch;
       position: sticky;
       bottom: 0;
       z-index: 2;
+      background: var(--surface2);
+    }
+    .impostor-disguise-btn-fake {
+      width: 100%;
+      margin-top: 10px;
+      align-self: stretch;
       background: var(--surface2);
     }
 
@@ -426,10 +432,11 @@
               <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
               <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
               <div class="tasks" id="fakeCrewTasks"></div>
+              <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
             </div>
           </div>
 
-          <button class="btn-secondary impostor-disguise-btn" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
+          <button class="btn-secondary impostor-disguise-btn-real" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
         </div>
       </div>
     </div>
@@ -1033,20 +1040,20 @@
       fakeCrewMode = !fakeCrewMode;
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const impostorContent = el('impostorContentArea');
+      const btnFake = el('btnFakeCrew');
+      const btnBack = el('btnBackToReal');
       el('fakeCrewArea').classList.toggle('hidden', !fakeCrewMode);
       el('realImpostorControls').classList.toggle('hidden', fakeCrewMode);
-      const btn = el('btnFakeCrew');
+      btnFake.classList.toggle('hidden', fakeCrewMode);
+      btnBack.classList.toggle('hidden', !fakeCrewMode);
       if (fakeCrewMode) {
-        btn.textContent = '😈 Voltar ao painel real';
         el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
         el('roleBadge').className = 'badge blue';
         renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
         if (impostorContent) impostorContent.scrollTop = 0;
-        if (impostorContent) impostorContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
         toast('🧑‍🚀 Disfarce ativado');
       } else {
-        btn.textContent = '🧑‍🚀 Fingir ser tripulante';
         el('roleBadge').textContent = '😈 IMPOSTOR';
         el('roleBadge').className = 'badge red';
         if (roleScroll) roleScroll.scrollTop = 0;
@@ -1062,6 +1069,8 @@
       fakeCrewTasksCache = makeTasks();
       el('fakeCrewArea').classList.add('hidden');
       el('realImpostorControls').classList.remove('hidden');
+      if (el('btnFakeCrew')) el('btnFakeCrew').classList.remove('hidden');
+      if (el('btnBackToReal')) el('btnBackToReal').classList.add('hidden');
       el('btnFakeCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const impostorContent = el('impostorContentArea');
@@ -1492,6 +1501,7 @@
     el('btnReload').onclick = resetSessionAndGoHome;
     el('btnLeaveLobby').onclick = leaveLobby;
     el('btnFakeCrew').onclick = toggleFakeCrewMode;
+    if (el('btnBackToReal')) el('btnBackToReal').onclick = toggleFakeCrewMode;
 
     if (configIncomplete) {
       showScreen('join-screen');
