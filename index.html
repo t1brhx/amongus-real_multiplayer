@@ -296,6 +296,15 @@
       color: var(--muted);
       font-size: .78rem;
     }
+    .meeting-task-box {
+      background: rgba(124,92,191,.08);
+      border: 1px solid rgba(124,92,191,.16);
+      border-radius: 14px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
 
     .badge {
       padding: 6px 12px; border-radius: 999px; font-size: .72rem;
@@ -550,6 +559,14 @@
         <div class="big-emoji">🚨</div>
         <div class="big-title" style="color: var(--red);">REUNIÃO</div>
         <div class="muted" id="meetingText">Reunião iniciada</div>
+
+        <div class="meeting-task-box">
+          <div class="global-task-title">Tasks da partida</div>
+          <div class="progress-wrap"><div class="progress-bar" id="meetingGlobalTasksBar"></div></div>
+          <div class="progress-text" id="meetingGlobalTasksText">0/0 tasks</div>
+          <div class="global-task-sub" id="meetingGlobalTasksRemaining">Faltam 0 tasks para o jogo acabar.</div>
+        </div>
+
         <div class="muted" id="meetingVotesInfo">0/0 votos</div>
         <div class="vote-list" id="meetingVoteList"></div>
         <div class="muted" id="meetingSelectedText">Selecione alguém ou Skip.</div>
@@ -889,14 +906,24 @@
       };
     }
 
-    function renderGlobalTaskProgress(playersObj){
+    function renderTaskProgressInto(playersObj, barId, textId, remainingId){
       const stats = getTaskStats(playersObj);
       const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
-      el('globalTasksBar').style.width = pct + '%';
-      el('globalTasksText').textContent = `${stats.done}/${stats.total} tasks`;
-      el('globalTasksRemaining').textContent = stats.total > 0
-        ? `Faltam ${stats.remaining} tasks para o jogo acabar.`
-        : 'Ainda não há tasks contabilizadas.';
+      if (el(barId)) el(barId).style.width = pct + '%';
+      if (el(textId)) el(textId).textContent = `${stats.done}/${stats.total} tasks`;
+      if (el(remainingId)) {
+        el(remainingId).textContent = stats.total > 0
+          ? `Faltam ${stats.remaining} tasks para o jogo acabar.`
+          : 'Ainda não há tasks contabilizadas.';
+      }
+    }
+
+    function renderGlobalTaskProgress(playersObj){
+      renderTaskProgressInto(playersObj, 'globalTasksBar', 'globalTasksText', 'globalTasksRemaining');
+    }
+
+    function renderMeetingGlobalTaskProgress(playersObj){
+      renderTaskProgressInto(playersObj, 'meetingGlobalTasksBar', 'meetingGlobalTasksText', 'meetingGlobalTasksRemaining');
     }
 
     function renderTaskList(tasks, listId, barId, textId, clickable=true) {
@@ -970,6 +997,7 @@
       const alivePlayers = getAlivePlayers(playersObj);
       const deadPlayers = Object.values(playersObj || {}).filter(p => p && p.status !== 'alive');
       el('meetingVotesInfo').textContent = `${Object.keys(meeting.votes || {}).length}/${alivePlayers.length} votos`;
+      renderMeetingGlobalTaskProgress(playersObj || {});
 
       const alreadyVoted = !!(meeting.votes && meeting.votes[myPlayerId]);
       container.innerHTML = `
@@ -1370,8 +1398,16 @@
         if (myRole === 'IMPOSTOR') updateKillCooldownUI(player);
       });
 
-      dbListen(['matches', matchId, 'players'], players => {
+      dbListen(['matches', matchId, 'players'], async players => {
         renderGlobalTaskProgress(players || {});
+        if (!el('meetingOverlay').classList.contains('hidden')) {
+          const currentMeeting = await dbGet(['matches', matchId, 'meeting']);
+          if (currentMeeting && currentMeeting.active) {
+            renderMeetingVoting(players || {}, currentMeeting);
+          } else {
+            renderMeetingGlobalTaskProgress(players || {});
+          }
+        }
       });
 
       dbListen(['matches', matchId, 'meeting'], async (meeting) => {
