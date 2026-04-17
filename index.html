@@ -100,27 +100,33 @@
       overflow-y: auto;
       padding-right: 4px;
     }
-    #realSheriffControls, #sheriffCrewDisguiseArea {
+    #realImpostorControls, #fakeCrewArea, #realSheriffControls, #sheriffCrewDisguiseArea {
       display: flex;
       flex-direction: column;
       gap: 10px;
     }
-    .sheriff-disguise-btn-real {
-      margin-top: auto;
-      width: 100%;
-      align-self: stretch;
-      background: var(--surface2);
+    #sheriffCrewDisguiseArea {
+      min-height: 0;
+      flex: 1;
     }
-    .sheriff-disguise-btn-fake {
-      width: 100%;
-      margin-top: 10px;
-      align-self: stretch;
-      background: var(--surface2);
-    }
-    #realImpostorControls, #fakeCrewArea {
+    #sheriffCrewScroll {
       display: flex;
       flex-direction: column;
       gap: 10px;
+      min-height: 0;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+      max-height: 46vh;
+    }
+    #sheriffCrewDisguiseArea .tasks {
+      max-height: none;
+      overflow: visible;
+      padding-right: 0;
+    }
+    .sheriff-bottom-space {
+      height: 720px;
+      flex-shrink: 0;
     }
     .impostor-disguise-btn-real {
       margin-top: auto;
@@ -131,9 +137,17 @@
       z-index: 2;
       background: var(--surface2);
     }
-    .impostor-disguise-btn-fake {
+    .impostor-disguise-btn-fake,
+    .sheriff-disguise-btn-fake {
       width: 100%;
-      margin-top: 10px;
+      margin-top: 0;
+      align-self: stretch;
+      background: var(--surface2);
+      flex-shrink: 0;
+    }
+    .sheriff-disguise-btn-real {
+      margin-top: auto;
+      width: 100%;
       align-self: stretch;
       background: var(--surface2);
     }
@@ -430,10 +444,6 @@
         <div id="sheriffArea" class="hidden">
           <div id="sheriffContentArea">
             <div id="realSheriffControls">
-              <div class="field-label">Minhas tasks</div>
-              <div class="progress-wrap"><div class="progress-bar" id="sheriffProgressBar"></div></div>
-              <div class="progress-text" id="sheriffProgressText">0/0 tasks</div>
-              <div class="tasks" id="sheriffTasks"></div>
               <div class="field-label" style="margin-top:4px;">Selecionar alvo</div>
               <div class="targets" id="sheriffTargets"></div>
               <div class="row wrap">
@@ -443,14 +453,17 @@
             </div>
 
             <div id="sheriffCrewDisguiseArea" class="hidden">
-              <div class="field-label">Minhas tasks</div>
-              <div class="progress-wrap"><div class="progress-bar" id="sheriffCrewProgressBar"></div></div>
-              <div class="progress-text" id="sheriffCrewProgressText">0/0 tasks</div>
-              <div class="tasks" id="sheriffCrewTasks"></div>
-              <div class="row wrap">
-                <button class="btn-report" id="sheriffCrewReport">📣 Reportar</button>
+              <div class="field-label">Tasks</div>
+              <div id="sheriffCrewScroll">
+                <div class="progress-wrap"><div class="progress-bar" id="sheriffCrewProgressBar"></div></div>
+                <div class="progress-text" id="sheriffCrewProgressText">0/0 tasks</div>
+                <div class="tasks" id="sheriffCrewTasks"></div>
+                <div class="row wrap">
+                  <button class="btn-report" id="sheriffCrewReport">📣 Reportar</button>
+                </div>
+                <div class="sheriff-bottom-space"></div>
+                <button class="btn-secondary sheriff-disguise-btn-fake hidden" id="btnBackSheriffReal">🔫 Voltar ao painel real</button>
               </div>
-              <button class="btn-secondary sheriff-disguise-btn-fake hidden" id="btnBackSheriffReal">🔫 Voltar ao painel real</button>
             </div>
           </div>
 
@@ -1237,6 +1250,7 @@
       fakeSheriffMode = !fakeSheriffMode;
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const sheriffContent = el('sheriffContentArea');
+      const sheriffCrewScroll = el('sheriffCrewScroll');
       const btnFake = el('btnSheriffBeCrew');
       const btnBack = el('btnBackSheriffReal');
 
@@ -1248,6 +1262,7 @@
       if (fakeSheriffMode) {
         el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
         el('roleBadge').className = 'badge blue';
+        if (sheriffCrewScroll) sheriffCrewScroll.scrollTop = 0;
         if (sheriffContent) sheriffContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
         toast('🧑‍🚀 Sheriff disfarçado de tripulante');
@@ -1256,7 +1271,7 @@
         el('roleBadge').className = 'badge yellow';
         if (sheriffContent) sheriffContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
-        toast('🔫 Voltou ao painel real do Sheriff');
+        toast('🔫 Voltou ao painel real');
       }
     }
 
@@ -1337,7 +1352,6 @@
 
       if (role === 'SHERIFF') {
         dbListen(['matches', matchId, 'players', myPlayerId, 'tasks'], tasks => {
-          renderTaskList(tasks, 'sheriffTasks', 'sheriffProgressBar', 'sheriffProgressText', true);
           renderTaskList(tasks, 'sheriffCrewTasks', 'sheriffCrewProgressBar', 'sheriffCrewProgressText', true);
         });
         dbListen(['matches', matchId, 'players'], players => {
@@ -1743,6 +1757,8 @@
     el('btnLeaveLobby').onclick = leaveLobby;
     el('btnFakeCrew').onclick = toggleFakeCrewMode;
     if (el('btnBackToReal')) el('btnBackToReal').onclick = toggleFakeCrewMode;
+    if (el('btnSheriffBeCrew')) el('btnSheriffBeCrew').onclick = toggleSheriffCrewMode;
+    if (el('btnBackSheriffReal')) el('btnBackSheriffReal').onclick = toggleSheriffCrewMode;
 
 
     window.addEventListener('pagehide', async () => {
