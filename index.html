@@ -38,7 +38,24 @@
       overflow-y: auto;
       transition: opacity .28s ease, transform .28s ease;
     }
-    .hidden { opacity: 0; pointer-events: none; transform: scale(.98); }
+    .screen.hidden { opacity: 0; pointer-events: none; transform: scale(.98); }
+    .hidden { display: none !important; }
+
+    .player-row.dead { opacity:.72; }
+    .player-row.dead .player-row-name { text-decoration: line-through; }
+    .player-dead-mark { color: var(--red); font-weight: 900; margin-left: 6px; }
+    .target.dead { opacity:.58; }
+    .target.dead .target-name { text-decoration: line-through; }
+    .target.dead .target-avatar { position: relative; }
+    .target.dead .target-avatar::after {
+      content:'✖'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:1rem; font-weight:900; background: rgba(232,25,44,.28); border-radius:10px;
+    }
+    .target.disabled { opacity:.55; pointer-events:none; }
+    .announcement-overlay { background: rgba(0,0,0,.96); }
+    .announcement-card { text-align:center; gap: 10px; }
+    .announcement-title { font-family:'Orbitron',sans-serif; font-size:1.1rem; line-height:1.45; }
+    .announcement-sub { color: var(--muted); font-size: 1rem; }
 
     .card {
       width: 100%; max-width: 430px;
@@ -67,6 +84,43 @@
       overflow-y: auto;
       padding-right: 4px;
     }
+    #impostorArea {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      min-height: 0;
+      flex: 1;
+    }
+    #impostorContentArea {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+    #realImpostorControls, #fakeCrewArea {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .impostor-disguise-btn-real {
+      margin-top: auto;
+      width: 100%;
+      align-self: stretch;
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+      background: var(--surface2);
+    }
+    .impostor-disguise-btn-fake {
+      width: 100%;
+      margin-top: 10px;
+      align-self: stretch;
+      background: var(--surface2);
+    }
+
 
     .title {
       font-family: 'Orbitron', sans-serif;
@@ -370,32 +424,35 @@
         </div>
 
         <div id="impostorArea" class="hidden">
-          <button class="btn-secondary" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
-
-          <div id="realImpostorControls">
-            <div class="field-label">Selecionar alvo</div>
-            <div class="targets" id="impostorTargets"></div>
-            <div class="field-label" style="margin-top:4px;">Equipe dos impostores</div>
-            <div class="ally-list" id="impostorTeam"></div>
-            <div class="row wrap">
-              <button class="btn-report" id="impostorReport">📣 Reportar</button>
-              <button class="btn-kill" id="impostorKill">💀 Matar</button>
-              <button class="btn-sabo" id="btnToggleSabo">⚡ Sabotar</button>
+          <div id="impostorContentArea">
+            <div id="realImpostorControls">
+              <div class="field-label">Selecionar alvo</div>
+              <div class="targets" id="impostorTargets"></div>
+              <div class="field-label" style="margin-top:4px;">Equipe dos impostores</div>
+              <div class="ally-list" id="impostorTeam"></div>
+              <div class="row wrap">
+                <button class="btn-report" id="impostorReport">📣 Reportar</button>
+                <button class="btn-kill" id="impostorKill">💀 Matar</button>
+                <button class="btn-sabo" id="btnToggleSabo">⚡ Sabotar</button>
+              </div>
+              <div class="muted" id="killCooldownText">Cooldown de kill pronto.</div>
+              <div class="sabo-panel hidden" id="saboPanel">
+                <button class="btn-sabo" data-sabo="lights">🔦 Falha elétrica</button>
+                <button class="btn-sabo" data-sabo="emergency">🚨 Sistema desconhecido</button>
+                <button class="btn-sabo" data-sabo="task">⚠️ Sistema crítico</button>
+              </div>
             </div>
-            <div class="muted" id="killCooldownText">Cooldown de kill pronto.</div>
-            <div class="sabo-panel hidden" id="saboPanel">
-              <button class="btn-sabo" data-sabo="lights">🔦 Falha elétrica</button>
-              <button class="btn-sabo" data-sabo="emergency">🚨 Sistema desconhecido</button>
-              <button class="btn-sabo" data-sabo="task">⚠️ Sistema crítico</button>
+
+            <div id="fakeCrewArea" class="hidden">
+              <div class="field-label">Tasks</div>
+              <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
+              <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
+              <div class="tasks" id="fakeCrewTasks"></div>
+              <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
             </div>
           </div>
 
-          <div id="fakeCrewArea" class="hidden">
-            <div class="field-label">Tasks</div>
-            <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
-            <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
-            <div class="tasks" id="fakeCrewTasks"></div>
-          </div>
+          <button class="btn-secondary impostor-disguise-btn-real" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
         </div>
       </div>
     </div>
@@ -443,12 +500,20 @@
     </div>
   </div>
 
-
   <div id="deadOverlay" class="overlay hidden">
     <div class="overlay-card">
       <div class="big-emoji">💀</div>
       <div class="big-title" style="color:#e8192c;">Você morreu</div>
       <div class="muted">Agora você está em modo espectador.</div>
+    </div>
+  </div>
+
+
+  <div id="ejectOverlay" class="overlay announcement-overlay hidden">
+    <div class="overlay-card announcement-card">
+      <div class="big-emoji">🚀</div>
+      <div class="announcement-title" id="ejectTitle">Alguém foi ejetado.</div>
+      <div class="announcement-sub" id="ejectSub">Restam 0 impostores.</div>
     </div>
   </div>
 
@@ -638,9 +703,9 @@
       if (!target) return;
       target.innerHTML = players.map(p => `
         <div class="item">
-          <div class="player-row">
+          <div class="player-row ${p.status === 'dead' ? 'dead' : ''}">
             <span class="player-color-dot" style="background:${getColorHex(p.color)}"></span>
-            <span class="player-row-name">${p.name}${p.connected === false ? ' (offline)' : ''}</span>
+            <span class="player-row-name">${p.name}${p.connected === false ? ' (offline)' : ''}${p.status === 'dead' ? '<span class="player-dead-mark">✖ morto</span>' : ''}</span>
           </div>
         </div>
       `).join('') || '<div class="muted">Aguardando jogadores...</div>';
@@ -728,19 +793,28 @@
     function renderTargets(players, containerId) {
       const cont = el(containerId);
       if (!cont) return;
-      const alive = getAliveConnectedPlayers(players).filter(p => p.id !== myPlayerId);
-      if (!alive.length) {
-        cont.innerHTML = '<div class="muted">Nenhum alvo disponível.</div>';
+      const connectedPlayers = getConnectedPlayers(players || {}).filter(p => p.id !== myPlayerId);
+      if (!connectedPlayers.length) {
+        cont.innerHTML = '<div class="muted">Nenhum jogador disponível.</div>';
         return;
       }
-      cont.innerHTML = alive.map(p => `
-        <div class="target ${selectedTargetId === p.id ? 'selected' : ''}" data-id="${p.id}">
-          <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
-          <div class="target-name">${p.name}</div>
-        </div>
-      `).join('');
 
-      cont.querySelectorAll('.target').forEach(node => {
+      const ordered = [
+        ...connectedPlayers.filter(p => p.status === 'alive'),
+        ...connectedPlayers.filter(p => p.status !== 'alive')
+      ];
+
+      cont.innerHTML = ordered.map(p => {
+        const dead = p.status !== 'alive';
+        return `
+          <div class="target ${selectedTargetId === p.id ? 'selected' : ''} ${dead ? 'dead disabled' : ''}" ${dead ? '' : `data-id="${p.id}"`}>
+            <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
+            <div class="target-name">${p.name}${dead ? ' — morto' : ''}</div>
+          </div>
+        `;
+      }).join('');
+
+      cont.querySelectorAll('.target[data-id]').forEach(node => {
         node.onclick = () => {
           selectedTargetId = node.dataset.id;
           if (containerId === 'sheriffTargets') renderTargets(players, 'sheriffTargets');
@@ -751,7 +825,8 @@
 
     function renderMeetingVoting(playersObj, meeting){
       const container = el('meetingVoteList');
-      const alivePlayers = getAliveConnectedPlayers(playersObj);
+      const alivePlayers = getAlivePlayers(playersObj);
+      const deadPlayers = Object.values(playersObj || {}).filter(p => p && p.status !== 'alive');
       el('meetingVotesInfo').textContent = `${Object.keys(meeting.votes || {}).length}/${alivePlayers.length} votos`;
 
       const alreadyVoted = !!(meeting.votes && meeting.votes[myPlayerId]);
@@ -764,6 +839,13 @@
           <div class="target ${selectedVoteTarget === p.id ? 'selected' : ''} ${alreadyVoted ? 'disabled' : ''}" data-vote="${p.id}">
             <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
             <div class="target-name">${p.name}</div>
+          </div>
+        `).join('')}
+        ${deadPlayers.length ? `<div class="muted">Mortos</div>` : ''}
+        ${deadPlayers.map(p => `
+          <div class="target dead disabled">
+            <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
+            <div class="target-name">${p.name} — morto</div>
           </div>
         `).join('')}
       `;
@@ -799,13 +881,14 @@
     }
 
     function showDeadOverlay() {
-      el('deadOverlay').classList.remove('hidden');
+      const ov = el('deadOverlay');
+      if (ov) ov.classList.remove('hidden');
     }
 
     function hideDeadOverlay() {
-      el('deadOverlay').classList.add('hidden');
+      const ov = el('deadOverlay');
+      if (ov) ov.classList.add('hidden');
     }
-
 
     function showSabo(sabo, playersObj) {
       el('saboTitle').textContent = sabo.title || 'Sabotagem';
@@ -861,8 +944,9 @@
       clearListeners();
       dbListen(['matches', matchId, 'players'], (players) => {
         const all = Object.values(players || {});
-        el('adminInfo').textContent = `${all.length}/${totalPlayers} conectados`;
-        renderPlayerList(all, 'adminPlayers');
+        const connected = all.filter(p => p.connected !== false);
+        el('adminInfo').textContent = `${connected.length}/${totalPlayers} conectados`;
+        renderPlayerList(connected, 'adminPlayers');
       });
     }
 
@@ -905,7 +989,10 @@
     }
 
     async function joinMatch() {
+      if (joinInProgress) return;
       if (configIncomplete) return toast('⚠️ Primeiro cole seu firebaseConfig.');
+      setJoinButtonBusy(true);
+      try {
       const name = el('joinName').value.trim();
       const matchId = el('joinCode').value.trim().toUpperCase();
       if (!name) return toast('✏️ Digite seu nome.');
@@ -971,19 +1058,24 @@
       watchLobby(matchId, pid);
       showScreen('lobby-screen');
       el('lobbyCode').textContent = matchId;
+      } finally {
+        setJoinButtonBusy(false);
+      }
     }
 
     function watchLobby(matchId, pid) {
       clearListeners();
       dbListen(['matches', matchId], (match) => {
         if (!match) return;
-        const players = Object.values(match.players || {});
-        el('lobbyInfo').textContent = `${players.length}/${match.totalPlayers} conectados`;
-        renderPlayerList(players, 'lobbyPlayers');
+        const playersObj = match.players || {};
+        const players = Object.values(playersObj);
+        const connected = players.filter(p => p.connected !== false);
+        el('lobbyInfo').textContent = `${connected.length}/${match.totalPlayers} conectados`;
+        renderPlayerList(connected, 'lobbyPlayers');
 
-        const me = (match.players || {})[pid];
+        const me = playersObj[pid];
         if (me) myColor = me.color || null;
-        renderLobbyColorPicker(match.players || {});
+        renderLobbyColorPicker(playersObj);
         if (match.status === 'playing' && me && me.role) {
           myRole = me.role;
           myName = me.name;
@@ -1015,19 +1107,25 @@
     function toggleFakeCrewMode(){
       if(myRole !== 'IMPOSTOR') return;
       fakeCrewMode = !fakeCrewMode;
+      const roleScroll = document.querySelector('#roleCard .role-scroll');
+      const impostorContent = el('impostorContentArea');
+      const btnFake = el('btnFakeCrew');
+      const btnBack = el('btnBackToReal');
       el('fakeCrewArea').classList.toggle('hidden', !fakeCrewMode);
       el('realImpostorControls').classList.toggle('hidden', fakeCrewMode);
-      const btn = el('btnFakeCrew');
+      btnFake.classList.toggle('hidden', fakeCrewMode);
+      btnBack.classList.toggle('hidden', !fakeCrewMode);
       if (fakeCrewMode) {
-        btn.textContent = '😈 Voltar ao painel real';
         el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
         el('roleBadge').className = 'badge blue';
         renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
+        if (impostorContent) impostorContent.scrollTop = 0;
+        if (roleScroll) roleScroll.scrollTop = 0;
         toast('🧑‍🚀 Disfarce ativado');
       } else {
-        btn.textContent = '🧑‍🚀 Fingir ser tripulante';
         el('roleBadge').textContent = '😈 IMPOSTOR';
         el('roleBadge').className = 'badge red';
+        if (roleScroll) roleScroll.scrollTop = 0;
         toast('😈 Disfarce desativado');
       }
     }
@@ -1040,22 +1138,31 @@
       fakeCrewTasksCache = makeTasks();
       el('fakeCrewArea').classList.add('hidden');
       el('realImpostorControls').classList.remove('hidden');
+      if (el('btnFakeCrew')) el('btnFakeCrew').classList.remove('hidden');
+      if (el('btnBackToReal')) el('btnBackToReal').classList.add('hidden');
       el('btnFakeCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
+      const roleScroll = document.querySelector('#roleCard .role-scroll');
+      const impostorContent = el('impostorContentArea');
+      if (impostorContent) impostorContent.scrollTop = 0;
+      if (roleScroll) roleScroll.scrollTop = 0;
       selectedTargetId = null;
       selectedVoteTarget = null;
       hideDeadOverlay();
+      hideEjectionAnnouncement();
 
       dbListen(['matches', matchId, 'players', myPlayerId], (player) => {
         const prevStatus = myStatus;
         myPlayerSnapshot = player;
         myStatus = player?.status || 'alive';
         el('roleStatus').textContent = myStatus === 'dead' ? 'MORTO' : 'VIVO';
+
         if (myStatus === 'dead') {
           showDeadOverlay();
           if (prevStatus !== 'dead') toast('💀 Você morreu');
         } else {
           hideDeadOverlay();
         }
+
         if (myRole === 'IMPOSTOR') updateKillCooldownUI(player);
       });
 
@@ -1080,6 +1187,10 @@
 
       dbListen(['matches', matchId, 'status'], async (status) => {
         if (status === 'finished') showGameOver(matchId);
+      });
+
+      dbListen(['matches', matchId, 'ejectionAnnouncement'], (payload) => {
+        if (payload && payload.active) showEjectionAnnouncement(payload);
       });
 
       if (role === 'TRIPULANTE') {
@@ -1178,7 +1289,22 @@
       } else {
         const targetPlayer = playersObj?.[winner];
         if (targetPlayer) {
+          const wasImpostor = targetPlayer.role === 'IMPOSTOR';
           await dbUpdate(['matches', myMatchId, 'players', winner], { status: 'dead', ejected: true });
+
+          const updatedPlayers = { ...(playersObj || {}) };
+          updatedPlayers[winner] = { ...targetPlayer, status: 'dead', ejected: true };
+          const remainingImpostors = Object.values(updatedPlayers).filter(p => p.role === 'IMPOSTOR' && p.status === 'alive').length;
+
+          await dbSet(['matches', myMatchId, 'ejectionAnnouncement'], {
+            active: true,
+            id: Date.now(),
+            title: `${targetPlayer.name} ${wasImpostor ? 'era um Impostor.' : 'não era um Impostor.'}`,
+            sub: remainingImpostors === 0
+              ? 'Nenhum impostor resta.'
+              : `Restam ${remainingImpostors} impostor${remainingImpostors === 1 ? '' : 'es'}.`
+          });
+
           resultText = `🚪 ${targetPlayer.name} foi ejetado!`;
         } else {
           resultText = '⚠️ Votação encerrada sem ejeção.';
@@ -1194,6 +1320,7 @@
         resultText
       });
       toast(resultText, 3500);
+      await new Promise(resolve => setTimeout(resolve, 2600));
       await checkWinConditions();
     }
 
@@ -1288,9 +1415,9 @@
     async function checkWinConditions() {
       const match = await dbGet(['matches', myMatchId]);
       const playersObj = match?.players || {};
-      const aliveConnected = getAliveConnectedPlayers(playersObj);
-      const aliveImpostors = aliveConnected.filter(p => p.role === 'IMPOSTOR');
-      const aliveCrew = aliveConnected.filter(p => p.role !== 'IMPOSTOR');
+      const alivePlayers = Object.values(playersObj).filter(p => p && p.status === 'alive');
+      const aliveImpostors = alivePlayers.filter(p => p.role === 'IMPOSTOR');
+      const aliveCrew = alivePlayers.filter(p => p.role !== 'IMPOSTOR');
 
       if (aliveImpostors.length === 0) {
         await dbUpdate(['matches', myMatchId], { status: 'finished', winner: 'CREW_ELIMINATION' });
@@ -1302,7 +1429,7 @@
         return true;
       }
 
-      const aliveNonImpostors = Object.values(playersObj).filter(p => p.role !== 'IMPOSTOR' && p.status === 'alive');
+      const aliveNonImpostors = alivePlayers.filter(p => p.role !== 'IMPOSTOR');
       if (aliveNonImpostors.length > 0) {
         const allTasksDone = aliveNonImpostors.every(p => {
           const tasks = Object.values(p.tasks || {});
@@ -1319,6 +1446,7 @@
     async function showGameOver(matchId) {
       clearListeners();
       hideDeadOverlay();
+      hideEjectionAnnouncement();
       showScreen('gameover-screen');
       const match = await dbGet(['matches', matchId]);
       const players = Object.values(match?.players || {});
@@ -1340,7 +1468,7 @@
 
 
     async function leaveLobby() {
-      hideDeadOverlay();
+      hideEjectionAnnouncement();
       try {
         if (myMatchId && myPlayerId) {
           const match = await dbGet(['matches', myMatchId]);
@@ -1372,7 +1500,6 @@
     }
 
     function resetSessionAndGoHome() {
-      hideDeadOverlay();
       localStorage.removeItem('au_pid');
       localStorage.removeItem('au_mid');
       localStorage.removeItem('au_admin');
@@ -1477,6 +1604,15 @@
     el('btnReload').onclick = resetSessionAndGoHome;
     el('btnLeaveLobby').onclick = leaveLobby;
     el('btnFakeCrew').onclick = toggleFakeCrewMode;
+    if (el('btnBackToReal')) el('btnBackToReal').onclick = toggleFakeCrewMode;
+
+
+    window.addEventListener('pagehide', async () => {
+      try {
+        if (!myMatchId || !myPlayerId || !db) return;
+        await dbUpdate(['matches', myMatchId, 'players', myPlayerId], { connected: false, lastSeen: Date.now() });
+      } catch (e) {}
+    });
 
     if (configIncomplete) {
       showScreen('join-screen');
