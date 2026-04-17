@@ -105,22 +105,13 @@
       flex-direction: column;
       gap: 10px;
     }
-    #fakeCrewArea {
-      min-height: 0;
-    }
-    #fakeCrewTasks {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .fake-bottom-space {
-      height: 380px;
-      flex-shrink: 0;
-    }
     .impostor-disguise-btn-real {
       margin-top: auto;
       width: 100%;
       align-self: stretch;
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
       background: var(--surface2);
     }
     .impostor-disguise-btn-fake {
@@ -128,7 +119,6 @@
       margin-top: 10px;
       align-self: stretch;
       background: var(--surface2);
-      flex-shrink: 0;
     }
 
 
@@ -458,7 +448,7 @@
               <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
               <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
               <div class="tasks" id="fakeCrewTasks"></div>
-              <div class="fake-bottom-space"></div>
+              <div class="fake-bottom-spacer"></div>
               <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
             </div>
           </div>
@@ -1136,6 +1126,7 @@
       } else {
         el('roleBadge').textContent = '😈 IMPOSTOR';
         el('roleBadge').className = 'badge red';
+        if (impostorContent) impostorContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
         toast('😈 Disfarce desativado');
       }
