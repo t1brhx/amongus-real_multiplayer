@@ -599,7 +599,7 @@
         <div class="big-emoji">⚠️</div>
         <div class="big-title" id="saboTitle">Sabotagem</div>
         <div class="muted" id="saboText">Algo aconteceu</div>
-        <div class="muted" id="saboTimer">⏳ 40s restantes</div>
+        <div class="muted" id="saboTimer">⏳ 2:30 restantes</div>
         <div class="muted" id="saboProgress">0/0 ajudaram</div>
         <button class="btn-end hidden" id="btnFixSabo">🔧 Ajudar a corrigir</button>
       </div>
@@ -1134,9 +1134,12 @@
 
       const updateTimer = async () => {
         const remainingMs = Math.max(0, Number(sabo.endsAt || 0) - Date.now());
-        const secs = Math.ceil(remainingMs / 1000);
+        const totalSecs = Math.ceil(remainingMs / 1000);
+        const mins = Math.floor(totalSecs / 60);
+        const secs = totalSecs % 60;
+        const formatted = `${mins}:${String(secs).padStart(2, '0')}`;
         el('saboTimer').textContent = remainingMs > 0
-          ? `⏳ ${secs}s restantes`
+          ? `⏳ ${formatted} restantes`
           : '⏳ Tempo esgotado';
         if (remainingMs <= 0) {
           clearSabotageCountdown();
@@ -1705,7 +1708,7 @@
         place: cfg.place,
         by: myName,
         at: now,
-        endsAt: now + 40000,
+        endsAt: now + 150000,
         fixedBy: {}
       });
       el('saboPanel').classList.add('hidden');
