@@ -100,7 +100,7 @@
       overflow-y: auto;
       padding-right: 4px;
     }
-    #realSheriffControls, #fakeSheriffArea {
+    #realSheriffControls, #sheriffCrewDisguiseArea {
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -442,16 +442,19 @@
               </div>
             </div>
 
-            <div id="fakeSheriffArea" class="hidden">
-              <div class="field-label">Tasks</div>
-              <div class="progress-wrap"><div class="progress-bar" id="fakeSheriffProgressBar"></div></div>
-              <div class="progress-text" id="fakeSheriffProgressText">0/15 tasks</div>
-              <div class="tasks" id="fakeSheriffTasks"></div>
+            <div id="sheriffCrewDisguiseArea" class="hidden">
+              <div class="field-label">Minhas tasks</div>
+              <div class="progress-wrap"><div class="progress-bar" id="sheriffCrewProgressBar"></div></div>
+              <div class="progress-text" id="sheriffCrewProgressText">0/0 tasks</div>
+              <div class="tasks" id="sheriffCrewTasks"></div>
+              <div class="row wrap">
+                <button class="btn-report" id="sheriffCrewReport">📣 Reportar</button>
+              </div>
               <button class="btn-secondary sheriff-disguise-btn-fake hidden" id="btnBackSheriffReal">🔫 Voltar ao painel real</button>
             </div>
           </div>
 
-          <button class="btn-secondary sheriff-disguise-btn-real" id="btnFakeSheriffCrew">🧑‍🚀 Fingir ser tripulante</button>
+          <button class="btn-secondary sheriff-disguise-btn-real" id="btnSheriffBeCrew">🧑‍🚀 Ser tripulante</button>
         </div>
 
         <div id="impostorArea" class="hidden">
@@ -665,7 +668,6 @@
     let myPlayerSnapshot = null;
     let myColor = null;
     let fakeCrewTasksCache = makeTasks();
-    let fakeSheriffTasksCache = makeTasks();
     let joinInProgress = false;
 
     function setJoinButtonBusy(isBusy){
@@ -1230,15 +1232,15 @@
       }
     }
 
-    function toggleFakeSheriffMode(){
+    function toggleSheriffCrewMode(){
       if(myRole !== 'SHERIFF') return;
       fakeSheriffMode = !fakeSheriffMode;
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const sheriffContent = el('sheriffContentArea');
-      const btnFake = el('btnFakeSheriffCrew');
+      const btnFake = el('btnSheriffBeCrew');
       const btnBack = el('btnBackSheriffReal');
 
-      el('fakeSheriffArea').classList.toggle('hidden', !fakeSheriffMode);
+      el('sheriffCrewDisguiseArea').classList.toggle('hidden', !fakeSheriffMode);
       el('realSheriffControls').classList.toggle('hidden', fakeSheriffMode);
       btnFake.classList.toggle('hidden', fakeSheriffMode);
       btnBack.classList.toggle('hidden', !fakeSheriffMode);
@@ -1246,15 +1248,15 @@
       if (fakeSheriffMode) {
         el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
         el('roleBadge').className = 'badge blue';
-        renderTaskList(fakeSheriffTasksCache, 'fakeSheriffTasks', 'fakeSheriffProgressBar', 'fakeSheriffProgressText', false);
         if (sheriffContent) sheriffContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
-        toast('🧑‍🚀 Disfarce do Sheriff ativado');
+        toast('🧑‍🚀 Sheriff disfarçado de tripulante');
       } else {
         el('roleBadge').textContent = '🔫 SHERIFF';
         el('roleBadge').className = 'badge yellow';
+        if (sheriffContent) sheriffContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
-        toast('🔫 Painel real do Sheriff ativado');
+        toast('🔫 Voltou ao painel real do Sheriff');
       }
     }
 
@@ -1265,17 +1267,16 @@
       fakeCrewMode = false;
       fakeSheriffMode = false;
       fakeCrewTasksCache = makeTasks();
-      fakeSheriffTasksCache = makeTasks();
       el('fakeCrewArea').classList.add('hidden');
       el('realImpostorControls').classList.remove('hidden');
       if (el('btnFakeCrew')) el('btnFakeCrew').classList.remove('hidden');
       if (el('btnBackToReal')) el('btnBackToReal').classList.add('hidden');
-      if (el('fakeSheriffArea')) el('fakeSheriffArea').classList.add('hidden');
+      if (el('sheriffCrewDisguiseArea')) el('sheriffCrewDisguiseArea').classList.add('hidden');
       if (el('realSheriffControls')) el('realSheriffControls').classList.remove('hidden');
-      if (el('btnFakeSheriffCrew')) el('btnFakeSheriffCrew').classList.remove('hidden');
+      if (el('btnSheriffBeCrew')) el('btnSheriffBeCrew').classList.remove('hidden');
       if (el('btnBackSheriffReal')) el('btnBackSheriffReal').classList.add('hidden');
       el('btnFakeCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
-      if (el('btnFakeSheriffCrew')) el('btnFakeSheriffCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
+      if (el('btnSheriffBeCrew')) el('btnSheriffBeCrew').textContent = '🧑‍🚀 Ser tripulante';
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const impostorContent = el('impostorContentArea');
       if (impostorContent) impostorContent.scrollTop = 0;
@@ -1335,9 +1336,9 @@
       }
 
       if (role === 'SHERIFF') {
-        renderTaskList(fakeSheriffTasksCache, 'fakeSheriffTasks', 'fakeSheriffProgressBar', 'fakeSheriffProgressText', false);
         dbListen(['matches', matchId, 'players', myPlayerId, 'tasks'], tasks => {
           renderTaskList(tasks, 'sheriffTasks', 'sheriffProgressBar', 'sheriffProgressText', true);
+          renderTaskList(tasks, 'sheriffCrewTasks', 'sheriffCrewProgressBar', 'sheriffCrewProgressText', true);
         });
         dbListen(['matches', matchId, 'players'], players => {
           renderTargets(players || {}, 'sheriffTargets');
@@ -1729,6 +1730,7 @@
     el('btnJoin').onclick = joinMatch;
     el('crewReport').onclick = reportBody;
     el('sheriffReport').onclick = reportBody;
+    if (el('sheriffCrewReport')) el('sheriffCrewReport').onclick = reportBody;
     el('impostorReport').onclick = reportBody;
     el('sheriffShoot').onclick = sheriffShoot;
     el('impostorKill').onclick = impostorKill;
@@ -1741,8 +1743,6 @@
     el('btnLeaveLobby').onclick = leaveLobby;
     el('btnFakeCrew').onclick = toggleFakeCrewMode;
     if (el('btnBackToReal')) el('btnBackToReal').onclick = toggleFakeCrewMode;
-    if (el('btnFakeSheriffCrew')) el('btnFakeSheriffCrew').onclick = toggleFakeSheriffMode;
-    if (el('btnBackSheriffReal')) el('btnBackSheriffReal').onclick = toggleFakeSheriffMode;
 
 
     window.addEventListener('pagehide', async () => {
