@@ -38,8 +38,7 @@
       overflow-y: auto;
       transition: opacity .28s ease, transform .28s ease;
     }
-    .screen.hidden { opacity: 0; pointer-events: none; transform: scale(.98); }
-    .hidden { display: none !important; }
+    .hidden { opacity: 0; pointer-events: none; transform: scale(.98); }
 
     .card {
       width: 100%; max-width: 430px;
@@ -68,43 +67,6 @@
       overflow-y: auto;
       padding-right: 4px;
     }
-    #impostorArea {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-height: 0;
-      flex: 1;
-    }
-    #impostorContentArea {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 0;
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-    #realImpostorControls, #fakeCrewArea {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .impostor-disguise-btn-real {
-      margin-top: auto;
-      width: 100%;
-      align-self: stretch;
-      position: sticky;
-      bottom: 0;
-      z-index: 2;
-      background: var(--surface2);
-    }
-    .impostor-disguise-btn-fake {
-      width: 100%;
-      margin-top: 10px;
-      align-self: stretch;
-      background: var(--surface2);
-    }
-
 
     .title {
       font-family: 'Orbitron', sans-serif;
@@ -282,6 +244,22 @@
     ::-webkit-scrollbar-thumb { background: rgba(167,139,250,.55); border-radius: 999px; }
   
     .player-row { display:flex; align-items:center; gap:10px; }
+
+    .player-row.dead { opacity:.72; }
+    .player-row.dead .player-row-name { text-decoration: line-through; }
+    .player-dead-mark { color: var(--red); font-weight: 900; margin-left: 6px; }
+    .target.dead { opacity:.58; }
+    .target.dead .target-name { text-decoration: line-through; }
+    .target.dead .target-avatar { position: relative; }
+    .target.dead .target-avatar::after {
+      content:'✖'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      color:#fff; font-size:1rem; font-weight:900; background: rgba(232,25,44,.28); border-radius:10px;
+    }
+    .target.disabled { opacity:.55; pointer-events:none; }
+    .announcement-overlay { background: rgba(0,0,0,.96); }
+    .announcement-card { text-align:center; gap: 10px; }
+    .announcement-title { font-family:'Orbitron',sans-serif; font-size:1.1rem; line-height:1.45; }
+    .announcement-sub { color: var(--muted); font-size: 1rem; }
     .player-color-dot {
       width:16px; height:16px; border-radius:50%; flex-shrink:0;
       border:2px solid rgba(255,255,255,.18); box-shadow:0 0 10px rgba(255,255,255,.08);
@@ -408,35 +386,32 @@
         </div>
 
         <div id="impostorArea" class="hidden">
-          <div id="impostorContentArea">
-            <div id="realImpostorControls">
-              <div class="field-label">Selecionar alvo</div>
-              <div class="targets" id="impostorTargets"></div>
-              <div class="field-label" style="margin-top:4px;">Equipe dos impostores</div>
-              <div class="ally-list" id="impostorTeam"></div>
-              <div class="row wrap">
-                <button class="btn-report" id="impostorReport">📣 Reportar</button>
-                <button class="btn-kill" id="impostorKill">💀 Matar</button>
-                <button class="btn-sabo" id="btnToggleSabo">⚡ Sabotar</button>
-              </div>
-              <div class="muted" id="killCooldownText">Cooldown de kill pronto.</div>
-              <div class="sabo-panel hidden" id="saboPanel">
-                <button class="btn-sabo" data-sabo="lights">🔦 Falha elétrica</button>
-                <button class="btn-sabo" data-sabo="emergency">🚨 Sistema desconhecido</button>
-                <button class="btn-sabo" data-sabo="task">⚠️ Sistema crítico</button>
-              </div>
-            </div>
+          <button class="btn-secondary" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
 
-            <div id="fakeCrewArea" class="hidden">
-              <div class="field-label">Tasks</div>
-              <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
-              <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
-              <div class="tasks" id="fakeCrewTasks"></div>
-              <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
+          <div id="realImpostorControls">
+            <div class="field-label">Selecionar alvo</div>
+            <div class="targets" id="impostorTargets"></div>
+            <div class="field-label" style="margin-top:4px;">Equipe dos impostores</div>
+            <div class="ally-list" id="impostorTeam"></div>
+            <div class="row wrap">
+              <button class="btn-report" id="impostorReport">📣 Reportar</button>
+              <button class="btn-kill" id="impostorKill">💀 Matar</button>
+              <button class="btn-sabo" id="btnToggleSabo">⚡ Sabotar</button>
+            </div>
+            <div class="muted" id="killCooldownText">Cooldown de kill pronto.</div>
+            <div class="sabo-panel hidden" id="saboPanel">
+              <button class="btn-sabo" data-sabo="lights">🔦 Falha elétrica</button>
+              <button class="btn-sabo" data-sabo="emergency">🚨 Sistema desconhecido</button>
+              <button class="btn-sabo" data-sabo="task">⚠️ Sistema crítico</button>
             </div>
           </div>
 
-          <button class="btn-secondary impostor-disguise-btn-real" id="btnFakeCrew">🧑‍🚀 Fingir ser tripulante</button>
+          <div id="fakeCrewArea" class="hidden">
+            <div class="field-label">Tasks</div>
+            <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
+            <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
+            <div class="tasks" id="fakeCrewTasks"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -484,11 +459,20 @@
     </div>
   </div>
 
+
   <div id="deadOverlay" class="overlay hidden">
-    <div class="overlay-card">
+    <div class="overlay-card announcement-card">
       <div class="big-emoji">💀</div>
-      <div class="big-title" style="color:#e8192c;">Você morreu</div>
-      <div class="muted">Agora você está em modo espectador.</div>
+      <div class="announcement-title" style="color:#e8192c;">Você morreu</div>
+      <div class="announcement-sub">Agora você está em modo espectador.</div>
+    </div>
+  </div>
+
+  <div id="ejectOverlay" class="overlay announcement-overlay hidden">
+    <div class="overlay-card announcement-card">
+      <div class="big-emoji">🚀</div>
+      <div class="announcement-title" id="ejectTitle">Alguém foi ejetado.</div>
+      <div class="announcement-sub" id="ejectSub">Restam 0 impostores.</div>
     </div>
   </div>
 
@@ -608,6 +592,9 @@
     let myPlayerSnapshot = null;
     let myColor = null;
     let fakeCrewTasksCache = makeTasks();
+    let joinInProgress = false;
+    let lastEjectionSeenId = null;
+    let lastEjectionUntil = 0;
 
     const el = id => document.getElementById(id);
 
@@ -623,6 +610,40 @@
       ['join-screen','admin-screen','lobby-screen','role-screen','gameover-screen'].forEach(s => {
         el(s).classList.toggle('hidden', s !== id);
       });
+    }
+
+
+    function setJoinButtonBusy(busy){
+      joinInProgress = busy;
+      const btn = el('btnJoin');
+      if (!btn) return;
+      btn.disabled = busy;
+      btn.textContent = busy ? '⏳ Entrando...' : '🚀 Entrar na Partida';
+    }
+
+    function showDeadOverlay(){
+      el('deadOverlay').classList.remove('hidden');
+    }
+
+    function hideDeadOverlay(){
+      el('deadOverlay').classList.add('hidden');
+    }
+
+    function showEjectionAnnouncement(payload){
+      if (!payload || !payload.id || payload.id === lastEjectionSeenId) return;
+      lastEjectionSeenId = payload.id;
+      lastEjectionUntil = Date.now() + 4200;
+      el('ejectTitle').textContent = payload.title || 'Alguém foi ejetado.';
+      el('ejectSub').textContent = payload.sub || '';
+      el('ejectOverlay').classList.remove('hidden');
+      clearTimeout(showEjectionAnnouncement._timer);
+      showEjectionAnnouncement._timer = setTimeout(() => {
+        el('ejectOverlay').classList.add('hidden');
+      }, 4200);
+    }
+
+    function hideEjectionAnnouncement(){
+      el('ejectOverlay').classList.add('hidden');
     }
 
     function shuffle(arr){ return [...arr].sort(()=>Math.random()-.5); }
@@ -678,9 +699,9 @@
       if (!target) return;
       target.innerHTML = players.map(p => `
         <div class="item">
-          <div class="player-row">
+          <div class="player-row ${p.status === 'dead' ? 'dead' : ''}">
             <span class="player-color-dot" style="background:${getColorHex(p.color)}"></span>
-            <span class="player-row-name">${p.name}${p.connected === false ? ' (offline)' : ''}</span>
+            <span class="player-row-name">${p.name}${p.connected === false ? ' (offline)' : ''}${p.status === 'dead' ? '<span class="player-dead-mark">✖ morto</span>' : ''}</span>
           </div>
         </div>
       `).join('') || '<div class="muted">Aguardando jogadores...</div>';
@@ -713,8 +734,12 @@
       toast(`🎨 Cor alterada para ${getColorLabel(colorKey)}.`);
     }
 
+    function getConnectedPlayers(playersObj){
+      return Object.values(playersObj || {}).filter(p => p && p.connected !== false);
+    }
+
     function getAliveConnectedPlayers(playersObj){
-      return Object.values(playersObj || {}).filter(p => p && p.status === 'alive' && p.connected !== false);
+      return getConnectedPlayers(playersObj).filter(p => p.status === 'alive');
     }
 
     function setRoleUI(role) {
@@ -768,30 +793,39 @@
     function renderTargets(players, containerId) {
       const cont = el(containerId);
       if (!cont) return;
-      const alive = getAliveConnectedPlayers(players).filter(p => p.id !== myPlayerId);
-      if (!alive.length) {
-        cont.innerHTML = '<div class="muted">Nenhum alvo disponível.</div>';
+      const connectedPlayers = getConnectedPlayers(players || {}).filter(p => p.id !== myPlayerId);
+      if (!connectedPlayers.length) {
+        cont.innerHTML = '<div class="muted">Nenhum jogador disponível.</div>';
         return;
       }
-      cont.innerHTML = alive.map(p => `
-        <div class="target ${selectedTargetId === p.id ? 'selected' : ''}" data-id="${p.id}">
-          <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
-          <div class="target-name">${p.name}</div>
-        </div>
-      `).join('');
 
-      cont.querySelectorAll('.target').forEach(node => {
+      const ordered = [
+        ...connectedPlayers.filter(p => p.status === 'alive'),
+        ...connectedPlayers.filter(p => p.status !== 'alive')
+      ];
+
+      cont.innerHTML = ordered.map(p => {
+        const dead = p.status !== 'alive';
+        return `
+          <div class="target ${selectedTargetId === p.id ? 'selected' : ''} ${dead ? 'dead disabled' : ''}" ${dead ? '' : `data-id="${p.id}"`}>
+            <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
+            <div class="target-name">${p.name}${dead ? ' — morto' : ''}</div>
+          </div>
+        `;
+      }).join('');
+
+      cont.querySelectorAll('.target[data-id]').forEach(node => {
         node.onclick = () => {
           selectedTargetId = node.dataset.id;
-          if (containerId === 'sheriffTargets') renderTargets(players, 'sheriffTargets');
-          if (containerId === 'impostorTargets') renderTargets(players, 'impostorTargets');
+          renderTargets(players || {}, containerId);
         };
       });
     }
 
-    function renderMeetingVoting(playersObj, meeting){
+function renderMeetingVoting(playersObj, meeting){
       const container = el('meetingVoteList');
       const alivePlayers = getAliveConnectedPlayers(playersObj);
+      const deadPlayers = getConnectedPlayers(playersObj).filter(p => p.status !== 'alive');
       el('meetingVotesInfo').textContent = `${Object.keys(meeting.votes || {}).length}/${alivePlayers.length} votos`;
 
       const alreadyVoted = !!(meeting.votes && meeting.votes[myPlayerId]);
@@ -804,6 +838,13 @@
           <div class="target ${selectedVoteTarget === p.id ? 'selected' : ''} ${alreadyVoted ? 'disabled' : ''}" data-vote="${p.id}">
             <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
             <div class="target-name">${p.name}</div>
+          </div>
+        `).join('')}
+        ${deadPlayers.length ? `<div class="muted">Mortos</div>` : ''}
+        ${deadPlayers.map(p => `
+          <div class="target dead disabled">
+            <div class="target-avatar" style="background:${getColorHex(p.color)}; color:${getContrastForColor(p.color)}">${(p.name || '?')[0].toUpperCase()}</div>
+            <div class="target-name">${p.name} — morto</div>
           </div>
         `).join('')}
       `;
@@ -827,365 +868,7 @@
       }
     }
 
-    function showMeeting(meeting) {
-      el('meetingText').textContent = `Convocada por ${meeting.calledBy}`;
-      el('meetingOverlay').classList.remove('hidden');
-    }
-    function hideMeeting() {
-      el('meetingOverlay').classList.add('hidden');
-      selectedVoteTarget = null;
-      el('meetingVoteList').innerHTML = '';
-      el('meetingSelectedText').textContent = 'Selecione alguém ou Skip.';
-    }
-
-    function showDeadOverlay() {
-      const ov = el('deadOverlay');
-      if (ov) ov.classList.remove('hidden');
-    }
-
-    function hideDeadOverlay() {
-      const ov = el('deadOverlay');
-      if (ov) ov.classList.add('hidden');
-    }
-
-    function showSabo(sabo, playersObj) {
-      el('saboTitle').textContent = sabo.title || 'Sabotagem';
-      const aliveNeeded = getAliveConnectedPlayers(playersObj).length;
-      const fixedCount = Object.keys(sabo.fixedBy || {}).length;
-      el('saboText').textContent = `${sabo.label || 'Algo aconteceu'} • 📍 ${sabo.place || 'Local indefinido'}`;
-      el('saboProgress').textContent = `${fixedCount}/${aliveNeeded} ajudaram`;
-      const canHelp = myStatus !== 'dead' && !(sabo.fixedBy && sabo.fixedBy[myPlayerId]);
-      el('btnFixSabo').classList.toggle('hidden', !canHelp);
-      el('btnFixSabo').disabled = !canHelp;
-      el('saboOverlay').classList.remove('hidden');
-    }
-    function hideSabo() { el('saboOverlay').classList.add('hidden'); }
-
-    function isAdmin(){ return localStorage.getItem('au_admin') === '1'; }
-
-    async function setupPresence(matchId, pid){
-      if (!db) return;
-      const playerRef = dbRef('matches', matchId, 'players', pid);
-      await dbUpdate(['matches', matchId, 'players', pid], { connected: true, lastSeen: Date.now() });
-      onDisconnect(playerRef).update({ connected: false, lastSeen: serverTimestamp() });
-    }
-
-    async function createMatch() {
-      if (configIncomplete) return toast('⚠️ Primeiro cole seu firebaseConfig.');
-      const totalPlayers = Math.max(3, Math.min(40, parseInt(el('adminTotal').value || '10', 10)));
-      const impostors = Math.max(1, parseInt(el('adminImpostors').value || '3', 10));
-      const sheriffs = Math.max(0, parseInt(el('adminSheriffs').value || '2', 10));
-      if (impostors + sheriffs >= totalPlayers) return toast('❌ Papéis especiais demais para esse total.');
-
-      const matchId = code();
-      await dbSet(['matches', matchId], {
-        id: matchId,
-        totalPlayers,
-        impostors,
-        sheriffs,
-        status: 'waiting',
-        createdAt: Date.now(),
-        players: {},
-        meeting: { active: false, votes: {}, finished: false },
-        sabotage: { active: false, fixedBy: {} },
-        winner: null
-      });
-
-      myMatchId = matchId;
-      localStorage.setItem('au_mid_admin', matchId);
-      localStorage.setItem('au_admin', '1');
-
-      el('adminCode').textContent = matchId;
-      el('adminCreated').classList.remove('hidden');
-      toast(`✅ Partida criada: ${matchId}`);
-
-      clearListeners();
-      dbListen(['matches', matchId, 'players'], (players) => {
-        const all = Object.values(players || {});
-        el('adminInfo').textContent = `${all.length}/${totalPlayers} conectados`;
-        renderPlayerList(all, 'adminPlayers');
-      });
-    }
-
-    async function startMatch() {
-      const matchId = myMatchId || localStorage.getItem('au_mid_admin');
-      if (!matchId) return toast('❌ Crie a partida primeiro!');
-      const match = await dbGet(['matches', matchId]);
-      if (!match) return toast('❌ Partida não encontrada!');
-      const players = Object.values(match.players || {});
-      if (players.length < 3) return toast('❌ Mínimo 3 jogadores!');
-
-      const shuffled = shuffle(players);
-      const roles = [];
-      for (let i=0; i<match.impostors; i++) roles.push('IMPOSTOR');
-      for (let i=0; i<match.sheriffs; i++) roles.push('SHERIFF');
-      while (roles.length < shuffled.length) roles.push('TRIPULANTE');
-
-      const updates = {
-        [`matches/${matchId}/status`]: 'playing',
-        [`matches/${matchId}/startedAt`]: Date.now(),
-        [`matches/${matchId}/meeting`]: { active: false, votes: {}, finished: false },
-        [`matches/${matchId}/sabotage`]: { active: false, fixedBy: {} },
-        [`matches/${matchId}/winner`]: null
-      };
-
-      shuffled.forEach((p, i) => {
-        updates[`matches/${matchId}/players/${p.id}/role`] = roles[i];
-        updates[`matches/${matchId}/players/${p.id}/ejected`] = false;
-        updates[`matches/${matchId}/players/${p.id}/killCooldownUntil`] = 0;
-        updates[`matches/${matchId}/players/${p.id}/connected`] = true;
-        if (roles[i] !== 'IMPOSTOR') {
-          updates[`matches/${matchId}/players/${p.id}/tasks`] = makeTasks();
-        } else {
-          updates[`matches/${matchId}/players/${p.id}/tasks`] = {};
-        }
-      });
-
-      await update(ref(db), updates);
-      toast('🚀 Partida iniciada!');
-    }
-
-    async function joinMatch() {
-      if (configIncomplete) return toast('⚠️ Primeiro cole seu firebaseConfig.');
-      const name = el('joinName').value.trim();
-      const matchId = el('joinCode').value.trim().toUpperCase();
-      if (!name) return toast('✏️ Digite seu nome.');
-      if (!matchId) return toast('🔑 Digite o código da partida.');
-
-      const match = await dbGet(['matches', matchId]);
-      if (!match) return toast('❌ Partida não encontrada.');
-      if (match.status === 'finished') return toast('🏁 Partida encerrada.');
-
-      const savedPid = localStorage.getItem('au_pid');
-      const savedMid = localStorage.getItem('au_mid');
-      const existing = savedPid && savedMid === matchId ? await dbGet(['matches', matchId, 'players', savedPid]) : null;
-
-      if (existing) {
-        myPlayerId = savedPid;
-        myMatchId = matchId;
-        myName = existing.name || name;
-        myStatus = existing.status || 'alive';
-        myColor = existing.color || getFirstFreeColor(match.players || {}, savedPid);
-        localStorage.setItem('au_mid', matchId);
-        await dbUpdate(['matches', matchId, 'players', savedPid], { connected: true, lastSeen: Date.now(), color: myColor });
-        await setupPresence(matchId, savedPid);
-
-        if (match.status === 'waiting') {
-          watchLobby(matchId, savedPid);
-          showScreen('lobby-screen');
-          el('lobbyCode').textContent = matchId;
-          return;
-        }
-        if (match.status === 'playing' && existing.role) {
-          myRole = existing.role;
-          openRoleScreen(matchId, existing.role);
-          return;
-        }
-      }
-
-      if (match.status === 'playing') return toast('🚫 Partida já iniciada.');
-      const players = match.players || {};
-      if (Object.keys(players).length >= match.totalPlayers) return toast('🚫 Partida cheia.');
-
-      const pid = uid();
-      myPlayerId = pid;
-      myMatchId = matchId;
-      myName = name;
-      myStatus = 'alive';
-      localStorage.setItem('au_pid', pid);
-      localStorage.setItem('au_mid', matchId);
-
-      await dbSet(['matches', matchId, 'players', pid], {
-        id: pid,
-        name,
-        role: null,
-        status: 'alive',
-        joinedAt: Date.now(),
-        tasks: {},
-        connected: true,
-        lastSeen: Date.now(),
-        ejected: false,
-        killCooldownUntil: 0
-      });
-
-      await setupPresence(matchId, pid);
-      watchLobby(matchId, pid);
-      showScreen('lobby-screen');
-      el('lobbyCode').textContent = matchId;
-    }
-
-    function watchLobby(matchId, pid) {
-      clearListeners();
-      dbListen(['matches', matchId], (match) => {
-        if (!match) return;
-        const players = Object.values(match.players || {});
-        el('lobbyInfo').textContent = `${players.length}/${match.totalPlayers} conectados`;
-        renderPlayerList(players, 'lobbyPlayers');
-
-        const me = (match.players || {})[pid];
-        if (me) myColor = me.color || null;
-        renderLobbyColorPicker(match.players || {});
-        if (match.status === 'playing' && me && me.role) {
-          myRole = me.role;
-          myName = me.name;
-          myStatus = me.status || 'alive';
-          myColor = me.color || null;
-          openRoleScreen(matchId, me.role);
-        }
-        if (match.status === 'finished') showGameOver(matchId);
-      });
-    }
-
-    function updateKillCooldownUI(player){
-      const btn = el('impostorKill');
-      const text = el('killCooldownText');
-      if (!btn || myRole !== 'IMPOSTOR') return;
-      const until = Number(player?.killCooldownUntil || 0);
-      const remaining = Math.max(0, Math.ceil((until - Date.now()) / 1000));
-      if (remaining > 0) {
-        btn.disabled = true;
-        btn.textContent = `⏳ ${remaining}s`;
-        text.textContent = `Cooldown de kill: ${remaining}s restantes.`;
-      } else {
-        btn.disabled = myStatus === 'dead';
-        btn.textContent = '💀 Matar';
-        text.textContent = 'Cooldown de kill pronto.';
-      }
-    }
-
-    function toggleFakeCrewMode(){
-      if(myRole !== 'IMPOSTOR') return;
-      fakeCrewMode = !fakeCrewMode;
-      const roleScroll = document.querySelector('#roleCard .role-scroll');
-      const impostorContent = el('impostorContentArea');
-      const btnFake = el('btnFakeCrew');
-      const btnBack = el('btnBackToReal');
-      el('fakeCrewArea').classList.toggle('hidden', !fakeCrewMode);
-      el('realImpostorControls').classList.toggle('hidden', fakeCrewMode);
-      btnFake.classList.toggle('hidden', fakeCrewMode);
-      btnBack.classList.toggle('hidden', !fakeCrewMode);
-      if (fakeCrewMode) {
-        el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
-        el('roleBadge').className = 'badge blue';
-        renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
-        if (impostorContent) impostorContent.scrollTop = 0;
-        if (roleScroll) roleScroll.scrollTop = 0;
-        toast('🧑‍🚀 Disfarce ativado');
-      } else {
-        el('roleBadge').textContent = '😈 IMPOSTOR';
-        el('roleBadge').className = 'badge red';
-        if (roleScroll) roleScroll.scrollTop = 0;
-        toast('😈 Disfarce desativado');
-      }
-    }
-
-    function openRoleScreen(matchId, role) {
-      showScreen('role-screen');
-      setRoleUI(role);
-      clearListeners();
-      fakeCrewMode = false;
-      fakeCrewTasksCache = makeTasks();
-      el('fakeCrewArea').classList.add('hidden');
-      el('realImpostorControls').classList.remove('hidden');
-      if (el('btnFakeCrew')) el('btnFakeCrew').classList.remove('hidden');
-      if (el('btnBackToReal')) el('btnBackToReal').classList.add('hidden');
-      el('btnFakeCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
-      const roleScroll = document.querySelector('#roleCard .role-scroll');
-      const impostorContent = el('impostorContentArea');
-      if (impostorContent) impostorContent.scrollTop = 0;
-      if (roleScroll) roleScroll.scrollTop = 0;
-      selectedTargetId = null;
-      selectedVoteTarget = null;
-      hideDeadOverlay();
-
-      dbListen(['matches', matchId, 'players', myPlayerId], (player) => {
-        const prevStatus = myStatus;
-        myPlayerSnapshot = player;
-        myStatus = player?.status || 'alive';
-        el('roleStatus').textContent = myStatus === 'dead' ? 'MORTO' : 'VIVO';
-
-        if (myStatus === 'dead') {
-          showDeadOverlay();
-          if (prevStatus !== 'dead') toast('💀 Você morreu');
-        } else {
-          hideDeadOverlay();
-        }
-
-        if (myRole === 'IMPOSTOR') updateKillCooldownUI(player);
-      });
-
-      dbListen(['matches', matchId, 'meeting'], async (meeting) => {
-        if (meeting && meeting.active) {
-          showMeeting(meeting);
-          const players = await dbGet(['matches', matchId, 'players']);
-          renderMeetingVoting(players || {}, meeting);
-        } else {
-          hideMeeting();
-        }
-      });
-
-      dbListen(['matches', matchId, 'sabotage'], async (sabo) => {
-        if (sabo && sabo.active) {
-          const players = await dbGet(['matches', matchId, 'players']);
-          showSabo(sabo, players || {});
-        } else {
-          hideSabo();
-        }
-      });
-
-      dbListen(['matches', matchId, 'status'], async (status) => {
-        if (status === 'finished') showGameOver(matchId);
-      });
-
-      if (role === 'TRIPULANTE') {
-        dbListen(['matches', matchId, 'players', myPlayerId, 'tasks'], tasks => {
-          renderTaskList(tasks, 'crewTasks', 'crewProgressBar', 'crewProgressText', true);
-        });
-      }
-
-      if (role === 'SHERIFF') {
-        dbListen(['matches', matchId, 'players', myPlayerId, 'tasks'], tasks => {
-          renderTaskList(tasks, 'sheriffTasks', 'sheriffProgressBar', 'sheriffProgressText', true);
-        });
-        dbListen(['matches', matchId, 'players'], players => {
-          renderTargets(players || {}, 'sheriffTargets');
-        });
-      }
-
-      if (role === 'IMPOSTOR') {
-        renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
-        dbListen(['matches', matchId, 'players'], players => {
-          renderTargets(players || {}, 'impostorTargets');
-          const others = Object.values(players || {}).filter(p => p.role === 'IMPOSTOR' && p.id !== myPlayerId);
-          el('impostorTeam').innerHTML = others.length
-            ? others.map(p => `<div class="ally"><span>${p.status === 'dead' ? '💀' : '😈'} ${p.name}</span><span>${p.status === 'dead' ? 'MORTO' : (p.connected === false ? 'OFF' : 'VIVO')}</span></div>`).join('')
-            : '<div class="muted">Você é o único impostor.</div>';
-        });
-
-        setInterval(() => {
-          if (myRole === 'IMPOSTOR' && !el('role-screen').classList.contains('hidden')) {
-            updateKillCooldownUI(myPlayerSnapshot || {});
-          }
-        }, 1000);
-      }
-    }
-
-    async function reportBody() {
-      if (myStatus === 'dead') return toast('⚰️ Você está morto.');
-      const meeting = await dbGet(['matches', myMatchId, 'meeting']);
-      if (meeting && meeting.active) return toast('🚫 Já existe uma reunião.');
-      await dbSet(['matches', myMatchId, 'meeting'], {
-        active: true,
-        calledBy: myName,
-        at: Date.now(),
-        votes: {},
-        finished: false,
-        resultText: ''
-      });
-      toast('📣 Reunião iniciada!');
-    }
-
-    async function confirmMeetingVote() {
+async function confirmMeetingVote() {
       if (myStatus === 'dead') return toast('⚰️ Você está morto.');
       if (!selectedVoteTarget) return toast('👆 Selecione alguém ou Skip primeiro.');
       const meeting = await dbGet(['matches', myMatchId, 'meeting']);
@@ -1233,7 +916,28 @@
       } else {
         const targetPlayer = playersObj?.[winner];
         if (targetPlayer) {
+          const wasImpostor = targetPlayer.role === 'IMPOSTOR';
           await dbUpdate(['matches', myMatchId, 'players', winner], { status: 'dead', ejected: true });
+
+          const updatedPlayers = { ...(playersObj || {}) };
+          updatedPlayers[winner] = { ...targetPlayer, status: 'dead', ejected: true };
+          const remainingImpostors = Object.values(updatedPlayers).filter(p => p.role === 'IMPOSTOR' && p.status === 'alive' && p.connected !== false).length;
+          const title = `${targetPlayer.name} ${wasImpostor ? 'era um Impostor.' : 'não era um Impostor.'}`;
+          const sub = remainingImpostors === 0
+            ? 'Nenhum impostor resta.'
+            : `Restam ${remainingImpostors} impostor${remainingImpostors === 1 ? '' : 'es'}.`;
+
+          await dbSet(['matches', myMatchId, 'ejectionAnnouncement'], {
+            active: true,
+            id: Date.now(),
+            title,
+            sub,
+            targetId: winner,
+            targetName: targetPlayer.name,
+            wasImpostor,
+            remainingImpostors
+          });
+
           resultText = `🚪 ${targetPlayer.name} foi ejetado!`;
         } else {
           resultText = '⚠️ Votação encerrada sem ejeção.';
@@ -1252,7 +956,7 @@
       await checkWinConditions();
     }
 
-    async function sheriffShoot() {
+async function sheriffShoot() {
       if (myStatus === 'dead') return toast('⚰️ Você está morto.');
       const meeting = await dbGet(['matches', myMatchId, 'meeting']);
       if (meeting?.active) return toast('🚫 Reunião em andamento.');
@@ -1374,6 +1078,7 @@
     async function showGameOver(matchId) {
       clearListeners();
       hideDeadOverlay();
+      hideEjectionAnnouncement();
       showScreen('gameover-screen');
       const match = await dbGet(['matches', matchId]);
       const players = Object.values(match?.players || {});
@@ -1395,6 +1100,8 @@
 
 
     async function leaveLobby() {
+      hideDeadOverlay();
+      hideEjectionAnnouncement();
       try {
         if (myMatchId && myPlayerId) {
           const match = await dbGet(['matches', myMatchId]);
@@ -1426,6 +1133,8 @@
     }
 
     function resetSessionAndGoHome() {
+      hideDeadOverlay();
+      hideEjectionAnnouncement();
       localStorage.removeItem('au_pid');
       localStorage.removeItem('au_mid');
       localStorage.removeItem('au_admin');
@@ -1473,6 +1182,8 @@
         return true;
       }
       if (match.status === 'finished') {
+        hideDeadOverlay();
+        hideEjectionAnnouncement();
         localStorage.removeItem('au_pid');
         localStorage.removeItem('au_mid');
         localStorage.removeItem('au_admin');
@@ -1530,7 +1241,20 @@
     el('btnReload').onclick = resetSessionAndGoHome;
     el('btnLeaveLobby').onclick = leaveLobby;
     el('btnFakeCrew').onclick = toggleFakeCrewMode;
-    if (el('btnBackToReal')) el('btnBackToReal').onclick = toggleFakeCrewMode;
+
+
+    window.addEventListener('pagehide', async () => {
+      try {
+        if (!myMatchId || !myPlayerId || !db) return;
+        const match = await dbGet(['matches', myMatchId]);
+        if (!match) return;
+        if (match.status === 'waiting') {
+          await dbUpdate(['matches', myMatchId, 'players', myPlayerId], { connected: false, lastSeen: Date.now() });
+        } else {
+          await dbUpdate(['matches', myMatchId, 'players', myPlayerId], { connected: false, lastSeen: Date.now() });
+        }
+      } catch (e) {}
+    });
 
     if (configIncomplete) {
       showScreen('join-screen');
