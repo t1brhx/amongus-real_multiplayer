@@ -117,6 +117,7 @@
       flex: 1;
       overflow-y: auto;
       padding-right: 4px;
+      max-height: 46vh;
     }
     #fakeCrewArea .tasks {
       max-height: none;
@@ -124,7 +125,7 @@
       padding-right: 0;
     }
     .fake-bottom-space {
-      height: 340px;
+      height: 720px;
       flex-shrink: 0;
     }
     .impostor-disguise-btn-real {
@@ -1220,7 +1221,6 @@
       } else {
         el('roleBadge').textContent = '😈 IMPOSTOR';
         el('roleBadge').className = 'badge red';
-        if (impostorContent) impostorContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
         toast('😈 Disfarce desativado');
       }
