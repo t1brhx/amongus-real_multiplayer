@@ -84,14 +84,14 @@
       overflow-y: auto;
       padding-right: 4px;
     }
-    #impostorArea {
+    #impostorArea, #sheriffArea {
       display: flex;
       flex-direction: column;
       gap: 12px;
       min-height: 0;
       flex: 1;
     }
-    #impostorContentArea {
+    #impostorContentArea, #sheriffContentArea {
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -99,34 +99,28 @@
       flex: 1;
       overflow-y: auto;
       padding-right: 4px;
+    }
+    #realSheriffControls, #fakeSheriffArea {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .sheriff-disguise-btn-real {
+      margin-top: auto;
+      width: 100%;
+      align-self: stretch;
+      background: var(--surface2);
+    }
+    .sheriff-disguise-btn-fake {
+      width: 100%;
+      margin-top: 10px;
+      align-self: stretch;
+      background: var(--surface2);
     }
     #realImpostorControls, #fakeCrewArea {
       display: flex;
       flex-direction: column;
       gap: 10px;
-    }
-    #fakeCrewArea {
-      min-height: 0;
-      flex: 1;
-    }
-    #fakeCrewScroll {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      min-height: 0;
-      flex: 1;
-      overflow-y: auto;
-      padding-right: 4px;
-      max-height: 46vh;
-    }
-    #fakeCrewArea .tasks {
-      max-height: none;
-      overflow: visible;
-      padding-right: 0;
-    }
-    .fake-bottom-space {
-      height: 720px;
-      flex-shrink: 0;
     }
     .impostor-disguise-btn-real {
       margin-top: auto;
@@ -139,10 +133,9 @@
     }
     .impostor-disguise-btn-fake {
       width: 100%;
-      margin-top: 0;
+      margin-top: 10px;
       align-self: stretch;
       background: var(--surface2);
-      flex-shrink: 0;
     }
 
 
@@ -435,16 +428,30 @@
         </div>
 
         <div id="sheriffArea" class="hidden">
-          <div class="field-label">Minhas tasks</div>
-          <div class="progress-wrap"><div class="progress-bar" id="sheriffProgressBar"></div></div>
-          <div class="progress-text" id="sheriffProgressText">0/0 tasks</div>
-          <div class="tasks" id="sheriffTasks"></div>
-          <div class="field-label" style="margin-top:4px;">Selecionar alvo</div>
-          <div class="targets" id="sheriffTargets"></div>
-          <div class="row wrap">
-            <button class="btn-report" id="sheriffReport">📣 Reportar</button>
-            <button class="btn-shoot" id="sheriffShoot">🔫 Atirar</button>
+          <div id="sheriffContentArea">
+            <div id="realSheriffControls">
+              <div class="field-label">Minhas tasks</div>
+              <div class="progress-wrap"><div class="progress-bar" id="sheriffProgressBar"></div></div>
+              <div class="progress-text" id="sheriffProgressText">0/0 tasks</div>
+              <div class="tasks" id="sheriffTasks"></div>
+              <div class="field-label" style="margin-top:4px;">Selecionar alvo</div>
+              <div class="targets" id="sheriffTargets"></div>
+              <div class="row wrap">
+                <button class="btn-report" id="sheriffReport">📣 Reportar</button>
+                <button class="btn-shoot" id="sheriffShoot">🔫 Atirar</button>
+              </div>
+            </div>
+
+            <div id="fakeSheriffArea" class="hidden">
+              <div class="field-label">Tasks</div>
+              <div class="progress-wrap"><div class="progress-bar" id="fakeSheriffProgressBar"></div></div>
+              <div class="progress-text" id="fakeSheriffProgressText">0/15 tasks</div>
+              <div class="tasks" id="fakeSheriffTasks"></div>
+              <button class="btn-secondary sheriff-disguise-btn-fake hidden" id="btnBackSheriffReal">🔫 Voltar ao painel real</button>
+            </div>
           </div>
+
+          <button class="btn-secondary sheriff-disguise-btn-real" id="btnFakeSheriffCrew">🧑‍🚀 Fingir ser tripulante</button>
         </div>
 
         <div id="impostorArea" class="hidden">
@@ -469,13 +476,10 @@
 
             <div id="fakeCrewArea" class="hidden">
               <div class="field-label">Tasks</div>
-              <div id="fakeCrewScroll">
-                <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
-                <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
-                <div class="tasks" id="fakeCrewTasks"></div>
-                <div class="fake-bottom-space"></div>
-                <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
-              </div>
+              <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
+              <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
+              <div class="tasks" id="fakeCrewTasks"></div>
+              <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
             </div>
           </div>
 
@@ -657,9 +661,11 @@
     let selectedVoteTarget = null;
     let listeners = [];
     let fakeCrewMode = false;
+    let fakeSheriffMode = false;
     let myPlayerSnapshot = null;
     let myColor = null;
     let fakeCrewTasksCache = makeTasks();
+    let fakeSheriffTasksCache = makeTasks();
     let joinInProgress = false;
 
     function setJoinButtonBusy(isBusy){
@@ -1203,7 +1209,6 @@
       fakeCrewMode = !fakeCrewMode;
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const impostorContent = el('impostorContentArea');
-      const fakeScroll = el('fakeCrewScroll');
       const btnFake = el('btnFakeCrew');
       const btnBack = el('btnBackToReal');
       el('fakeCrewArea').classList.toggle('hidden', !fakeCrewMode);
@@ -1214,7 +1219,6 @@
         el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
         el('roleBadge').className = 'badge blue';
         renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
-        if (fakeScroll) fakeScroll.scrollTop = 0;
         if (impostorContent) impostorContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
         toast('🧑‍🚀 Disfarce ativado');
@@ -1226,17 +1230,52 @@
       }
     }
 
+    function toggleFakeSheriffMode(){
+      if(myRole !== 'SHERIFF') return;
+      fakeSheriffMode = !fakeSheriffMode;
+      const roleScroll = document.querySelector('#roleCard .role-scroll');
+      const sheriffContent = el('sheriffContentArea');
+      const btnFake = el('btnFakeSheriffCrew');
+      const btnBack = el('btnBackSheriffReal');
+
+      el('fakeSheriffArea').classList.toggle('hidden', !fakeSheriffMode);
+      el('realSheriffControls').classList.toggle('hidden', fakeSheriffMode);
+      btnFake.classList.toggle('hidden', fakeSheriffMode);
+      btnBack.classList.toggle('hidden', !fakeSheriffMode);
+
+      if (fakeSheriffMode) {
+        el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
+        el('roleBadge').className = 'badge blue';
+        renderTaskList(fakeSheriffTasksCache, 'fakeSheriffTasks', 'fakeSheriffProgressBar', 'fakeSheriffProgressText', false);
+        if (sheriffContent) sheriffContent.scrollTop = 0;
+        if (roleScroll) roleScroll.scrollTop = 0;
+        toast('🧑‍🚀 Disfarce do Sheriff ativado');
+      } else {
+        el('roleBadge').textContent = '🔫 SHERIFF';
+        el('roleBadge').className = 'badge yellow';
+        if (roleScroll) roleScroll.scrollTop = 0;
+        toast('🔫 Painel real do Sheriff ativado');
+      }
+    }
+
     function openRoleScreen(matchId, role) {
       showScreen('role-screen');
       setRoleUI(role);
       clearListeners();
       fakeCrewMode = false;
+      fakeSheriffMode = false;
       fakeCrewTasksCache = makeTasks();
+      fakeSheriffTasksCache = makeTasks();
       el('fakeCrewArea').classList.add('hidden');
       el('realImpostorControls').classList.remove('hidden');
       if (el('btnFakeCrew')) el('btnFakeCrew').classList.remove('hidden');
       if (el('btnBackToReal')) el('btnBackToReal').classList.add('hidden');
+      if (el('fakeSheriffArea')) el('fakeSheriffArea').classList.add('hidden');
+      if (el('realSheriffControls')) el('realSheriffControls').classList.remove('hidden');
+      if (el('btnFakeSheriffCrew')) el('btnFakeSheriffCrew').classList.remove('hidden');
+      if (el('btnBackSheriffReal')) el('btnBackSheriffReal').classList.add('hidden');
       el('btnFakeCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
+      if (el('btnFakeSheriffCrew')) el('btnFakeSheriffCrew').textContent = '🧑‍🚀 Fingir ser tripulante';
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const impostorContent = el('impostorContentArea');
       if (impostorContent) impostorContent.scrollTop = 0;
@@ -1296,6 +1335,7 @@
       }
 
       if (role === 'SHERIFF') {
+        renderTaskList(fakeSheriffTasksCache, 'fakeSheriffTasks', 'fakeSheriffProgressBar', 'fakeSheriffProgressText', false);
         dbListen(['matches', matchId, 'players', myPlayerId, 'tasks'], tasks => {
           renderTaskList(tasks, 'sheriffTasks', 'sheriffProgressBar', 'sheriffProgressText', true);
         });
@@ -1701,6 +1741,8 @@
     el('btnLeaveLobby').onclick = leaveLobby;
     el('btnFakeCrew').onclick = toggleFakeCrewMode;
     if (el('btnBackToReal')) el('btnBackToReal').onclick = toggleFakeCrewMode;
+    if (el('btnFakeSheriffCrew')) el('btnFakeSheriffCrew').onclick = toggleFakeSheriffMode;
+    if (el('btnBackSheriffReal')) el('btnBackSheriffReal').onclick = toggleFakeSheriffMode;
 
 
     window.addEventListener('pagehide', async () => {
