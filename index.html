@@ -105,6 +105,29 @@
       flex-direction: column;
       gap: 10px;
     }
+    #fakeCrewArea {
+      min-height: 0;
+      flex: 1;
+    }
+    #fakeCrewScroll {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-height: 0;
+      flex: 1;
+      overflow-y: auto;
+      padding-right: 4px;
+      max-height: 46vh;
+    }
+    #fakeCrewArea .tasks {
+      max-height: none;
+      overflow: visible;
+      padding-right: 0;
+    }
+    .fake-bottom-space {
+      height: 720px;
+      flex-shrink: 0;
+    }
     .impostor-disguise-btn-real {
       margin-top: auto;
       width: 100%;
@@ -117,9 +140,10 @@
     .impostor-disguise-btn-fake,
     .sheriff-disguise-btn-fake {
       width: 100%;
-      margin-top: 10px;
+      margin-top: 0;
       align-self: stretch;
       background: var(--surface2);
+      flex-shrink: 0;
     }
     .sheriff-disguise-btn-real {
       margin-top: auto;
@@ -463,10 +487,13 @@
 
             <div id="fakeCrewArea" class="hidden">
               <div class="field-label">Tasks</div>
-              <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
-              <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
-              <div class="tasks" id="fakeCrewTasks"></div>
-              <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
+              <div id="fakeCrewScroll">
+                <div class="progress-wrap"><div class="progress-bar" id="fakeCrewProgressBar"></div></div>
+                <div class="progress-text" id="fakeCrewProgressText">0/15 tasks</div>
+                <div class="tasks" id="fakeCrewTasks"></div>
+                <div class="fake-bottom-space"></div>
+                <button class="btn-secondary impostor-disguise-btn-fake hidden" id="btnBackToReal">😈 Voltar ao painel real</button>
+              </div>
             </div>
           </div>
 
@@ -1195,6 +1222,7 @@
       fakeCrewMode = !fakeCrewMode;
       const roleScroll = document.querySelector('#roleCard .role-scroll');
       const impostorContent = el('impostorContentArea');
+      const fakeScroll = el('fakeCrewScroll');
       const btnFake = el('btnFakeCrew');
       const btnBack = el('btnBackToReal');
       el('fakeCrewArea').classList.toggle('hidden', !fakeCrewMode);
@@ -1205,12 +1233,14 @@
         el('roleBadge').textContent = '🧑‍🚀 TRIPULANTE';
         el('roleBadge').className = 'badge blue';
         renderTaskList(fakeCrewTasksCache, 'fakeCrewTasks', 'fakeCrewProgressBar', 'fakeCrewProgressText', false);
+        if (fakeScroll) fakeScroll.scrollTop = 0;
         if (impostorContent) impostorContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
         toast('🧑‍🚀 Disfarce ativado');
       } else {
         el('roleBadge').textContent = '😈 IMPOSTOR';
         el('roleBadge').className = 'badge red';
+        if (impostorContent) impostorContent.scrollTop = 0;
         if (roleScroll) roleScroll.scrollTop = 0;
         toast('😈 Disfarce desativado');
       }
