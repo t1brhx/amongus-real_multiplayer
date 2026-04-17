@@ -305,6 +305,15 @@
       flex-direction: column;
       gap: 7px;
     }
+    .ghost-box {
+      background: rgba(34,197,94,.08);
+      border: 1px solid rgba(34,197,94,.18);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
 
     .badge {
       padding: 6px 12px; border-radius: 999px; font-size: .72rem;
@@ -469,6 +478,12 @@
         <div class="global-task-sub" id="globalTasksRemaining">Faltam 0 tasks para o jogo acabar.</div>
       </div>
 
+      <div id="ghostInfoBox" class="ghost-box hidden">
+        <div class="global-task-title">👻 Modo fantasma</div>
+        <div class="global-task-sub">Você morreu, mas ainda pode continuar fazendo tasks.</div>
+        <div class="global-task-sub">Você não pode votar, reportar, atirar, matar ou sabotar.</div>
+      </div>
+
       <div class="role-scroll">
         <div id="crewArea" class="hidden">
           <div class="field-label">Minhas tasks</div>
@@ -584,6 +599,7 @@
         <div class="big-emoji">⚠️</div>
         <div class="big-title" id="saboTitle">Sabotagem</div>
         <div class="muted" id="saboText">Algo aconteceu</div>
+        <div class="muted" id="saboTimer">⏳ 40s restantes</div>
         <div class="muted" id="saboProgress">0/0 ajudaram</div>
         <button class="btn-end hidden" id="btnFixSabo">🔧 Ajudar a corrigir</button>
       </div>
@@ -594,7 +610,9 @@
     <div class="overlay-card">
       <div class="big-emoji">💀</div>
       <div class="big-title" style="color:#e8192c;">Você morreu</div>
-      <div class="muted">Agora você está em modo espectador.</div>
+      <div class="muted">Modo fantasma ativado.</div>
+      <div class="muted">Você ainda pode continuar fazendo tasks, mas não pode votar nem reportar.</div>
+      <button class="btn-secondary" id="btnContinueGhost">👻 Continuar como fantasma</button>
     </div>
   </div>
 
@@ -725,6 +743,7 @@
     let myColor = null;
     let fakeCrewTasksCache = makeTasks();
     let joinInProgress = false;
+    let sabotageCountdownInterval = null;
 
     function setJoinButtonBusy(isBusy){
       joinInProgress = isBusy;
@@ -941,13 +960,13 @@
           </div>
           ${task.done
             ? '<div class="task-check">✓</div>'
-            : (clickable && myStatus !== 'dead'
+            : (clickable
               ? `<button class="task-btn" data-taskid="${task.id}">Feita</button>`
               : '<div class="task-check">•</div>')}
         </div>
       `).join('') || '<div class="muted">Sem tasks.</div>';
 
-      if (clickable && myStatus !== 'dead') {
+      if (clickable) {
         list.querySelectorAll('[data-taskid]').forEach(btn => {
           btn.onclick = async () => {
             const id = btn.dataset.taskid;
@@ -1060,18 +1079,81 @@
       if (ov) ov.classList.add('hidden');
     }
 
+    function updateGhostUI() {
+      const isGhost = myStatus === 'dead';
+      if (el('ghostInfoBox')) el('ghostInfoBox').classList.toggle('hidden', !isGhost);
+      if (el('roleStatus')) el('roleStatus').textContent = isGhost ? 'MORTO • FANTASMA' : 'VIVO';
+
+      const idsToDisable = [
+        'crewReport',
+        'sheriffReport',
+        'sheriffShoot',
+        'sheriffCrewReport',
+        'impostorReport',
+        'impostorKill',
+        'btnToggleSabo',
+        'btnConfirmVote',
+        'btnFixSabo'
+      ];
+      idsToDisable.forEach(id => {
+        const node = el(id);
+        if (node) node.disabled = isGhost;
+      });
+    }
+
+    function clearSabotageCountdown() {
+      if (sabotageCountdownInterval) {
+        clearInterval(sabotageCountdownInterval);
+        sabotageCountdownInterval = null;
+      }
+    }
+
+    async function triggerSabotageTimeoutIfNeeded(expectedEndsAt) {
+      if (!myMatchId) return;
+      const match = await dbGet(['matches', myMatchId]);
+      if (!match || match.status !== 'playing') return;
+      const sabo = match.sabotage;
+      if (!sabo || !sabo.active) return;
+      if (Number(sabo.endsAt || 0) !== Number(expectedEndsAt || 0)) return;
+      if (Date.now() < Number(sabo.endsAt || 0)) return;
+
+      await dbUpdate(['matches', myMatchId], { status: 'finished', winner: 'IMPOSTOR_SABOTAGE' });
+      await dbSet(['matches', myMatchId, 'sabotage'], { active: false, fixedBy: {}, timedOut: true });
+    }
+
     function showSabo(sabo, playersObj) {
       el('saboTitle').textContent = sabo.title || 'Sabotagem';
       const aliveNeeded = getAliveConnectedPlayers(playersObj).length;
       const fixedCount = Object.keys(sabo.fixedBy || {}).length;
       el('saboText').textContent = `${sabo.label || 'Algo aconteceu'} • 📍 ${sabo.place || 'Local indefinido'}`;
       el('saboProgress').textContent = `${fixedCount}/${aliveNeeded} ajudaram`;
+
       const canHelp = myStatus !== 'dead' && !(sabo.fixedBy && sabo.fixedBy[myPlayerId]);
       el('btnFixSabo').classList.toggle('hidden', !canHelp);
       el('btnFixSabo').disabled = !canHelp;
+
+      const updateTimer = async () => {
+        const remainingMs = Math.max(0, Number(sabo.endsAt || 0) - Date.now());
+        const secs = Math.ceil(remainingMs / 1000);
+        el('saboTimer').textContent = remainingMs > 0
+          ? `⏳ ${secs}s restantes`
+          : '⏳ Tempo esgotado';
+        if (remainingMs <= 0) {
+          clearSabotageCountdown();
+          await triggerSabotageTimeoutIfNeeded(sabo.endsAt);
+        }
+      };
+
+      clearSabotageCountdown();
+      updateTimer();
+      sabotageCountdownInterval = setInterval(updateTimer, 1000);
+
       el('saboOverlay').classList.remove('hidden');
     }
-    function hideSabo() { el('saboOverlay').classList.add('hidden'); }
+    function hideSabo() {
+      clearSabotageCountdown();
+      el('saboOverlay').classList.add('hidden');
+    }
 
     function isAdmin(){ return localStorage.getItem('au_admin') === '1'; }
 
@@ -1360,6 +1442,7 @@
     function openRoleScreen(matchId, role) {
       showScreen('role-screen');
       setRoleUI(role);
+      updateGhostUI();
       clearListeners();
       fakeCrewMode = false;
       fakeSheriffMode = false;
@@ -1386,7 +1469,7 @@
         const prevStatus = myStatus;
         myPlayerSnapshot = player;
         myStatus = player?.status || 'alive';
-        el('roleStatus').textContent = myStatus === 'dead' ? 'MORTO' : 'VIVO';
+        updateGhostUI();
 
         if (myStatus === 'dead') {
           showDeadOverlay();
@@ -1613,6 +1696,7 @@
       if (meeting?.active) return toast('🚫 Reunião em andamento.');
       const cfg = SABOTAGE_MAP[type];
       if (!cfg) return toast('❌ Sabotagem inválida.');
+      const now = Date.now();
       await dbSet(['matches', myMatchId, 'sabotage'], {
         active: true,
         type,
@@ -1620,7 +1704,8 @@
         label: cfg.label,
         place: cfg.place,
         by: myName,
-        at: Date.now(),
+        at: now,
+        endsAt: now + 40000,
         fixedBy: {}
       });
       el('saboPanel').classList.add('hidden');
@@ -1640,7 +1725,7 @@
       const fixedCount = Object.keys(freshSabo?.fixedBy || {}).length;
       toast('🔧 Você ajudou a corrigir!');
       if (fixedCount >= aliveNeeded && aliveNeeded > 0) {
-        await dbSet(['matches', myMatchId, 'sabotage'], { active: false, fixedBy: {} });
+        await dbSet(['matches', myMatchId, 'sabotage'], { active: false, fixedBy: {}, endsAt: 0 });
         toast('✅ Sabotagem corrigida por todos!');
       }
     }
@@ -1693,6 +1778,7 @@
         CREW_ELIMINATION: 'Tripulantes + Sheriffs venceram (todos os impostores foram mortos/ejetados).',
         CREW_TASKS: 'Tripulantes + Sheriffs venceram (todas as tasks foram concluídas).',
         IMPOSTOR: 'Impostores venceram (maioria alcançada).',
+        IMPOSTOR_SABOTAGE: 'Impostores venceram (a sabotagem não foi corrigida a tempo).',
         MANUAL: 'Partida encerrada manualmente.'
       };
       el('gameoverSubtitle').textContent = winnerMap[match?.winner] || 'Papéis revelados';
@@ -1733,6 +1819,8 @@
       fakeCrewMode = false;
       myPlayerSnapshot = null;
       myColor = null;
+      hideDeadOverlay();
+      hideSabo();
       clearListeners();
       showScreen('join-screen');
       toast('↩️ Você saiu do lobby.');
@@ -1753,6 +1841,8 @@
       fakeCrewMode = false;
       myPlayerSnapshot = null;
       myColor = null;
+      hideDeadOverlay();
+      hideSabo();
       clearListeners();
       location.reload();
     }
@@ -1839,6 +1929,7 @@
     el('btnToggleSabo').onclick = () => el('saboPanel').classList.toggle('hidden');
     el('saboPanel').querySelectorAll('[data-sabo]').forEach(btn => btn.onclick = () => activateSabotage(btn.dataset.sabo));
     el('btnFixSabo').onclick = helpFixSabotage;
+    if (el('btnContinueGhost')) el('btnContinueGhost').onclick = hideDeadOverlay;
     el('btnEndMeeting').onclick = endMeeting;
     el('btnConfirmVote').onclick = confirmMeetingVote;
     el('btnReload').onclick = resetSessionAndGoHome;
