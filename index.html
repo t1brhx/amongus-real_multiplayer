@@ -276,6 +276,27 @@
     .progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, #3b82f6, #a78bfa); transition: width .35s ease; }
     .progress-text { color: var(--muted); font-size: .78rem; }
 
+    .global-task-box {
+      background: rgba(124,92,191,.08);
+      border: 1px solid rgba(124,92,191,.16);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .global-task-title {
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+    .global-task-sub {
+      color: var(--muted);
+      font-size: .78rem;
+    }
+
     .badge {
       padding: 6px 12px; border-radius: 999px; font-size: .72rem;
       font-family: 'Orbitron', sans-serif; font-weight: 700; letter-spacing: 1px;
@@ -430,6 +451,13 @@
           <div id="roleStatus" class="muted">VIVO</div>
         </div>
         <div id="roleBadge" class="badge">PAPEL</div>
+      </div>
+
+      <div class="global-task-box">
+        <div class="global-task-title">Tasks da partida</div>
+        <div class="progress-wrap"><div class="progress-bar" id="globalTasksBar"></div></div>
+        <div class="progress-text" id="globalTasksText">0/0 tasks</div>
+        <div class="global-task-sub" id="globalTasksRemaining">Faltam 0 tasks para o jogo acabar.</div>
       </div>
 
       <div class="role-scroll">
@@ -842,6 +870,33 @@
       if(role === 'TRIPULANTE') el('crewArea').classList.remove('hidden');
       if(role === 'SHERIFF') el('sheriffArea').classList.remove('hidden');
       if(role === 'IMPOSTOR') el('impostorArea').classList.remove('hidden');
+    }
+
+    function getTaskStats(playersObj){
+      const relevant = Object.values(playersObj || {}).filter(p =>
+        p && (p.role === 'TRIPULANTE' || p.role === 'SHERIFF')
+      );
+
+      const total = relevant.reduce((sum, p) => sum + Object.keys(p.tasks || {}).length, 0);
+      const done = relevant.reduce((sum, p) => {
+        return sum + Object.values(p.tasks || {}).filter(t => t.done === true).length;
+      }, 0);
+
+      return {
+        total,
+        done,
+        remaining: Math.max(0, total - done)
+      };
+    }
+
+    function renderGlobalTaskProgress(playersObj){
+      const stats = getTaskStats(playersObj);
+      const pct = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0;
+      el('globalTasksBar').style.width = pct + '%';
+      el('globalTasksText').textContent = `${stats.done}/${stats.total} tasks`;
+      el('globalTasksRemaining').textContent = stats.total > 0
+        ? `Faltam ${stats.remaining} tasks para o jogo acabar.`
+        : 'Ainda não há tasks contabilizadas.';
     }
 
     function renderTaskList(tasks, listId, barId, textId, clickable=true) {
@@ -1315,6 +1370,10 @@
         if (myRole === 'IMPOSTOR') updateKillCooldownUI(player);
       });
 
+      dbListen(['matches', matchId, 'players'], players => {
+        renderGlobalTaskProgress(players || {});
+      });
+
       dbListen(['matches', matchId, 'meeting'], async (meeting) => {
         if (meeting && meeting.active) {
           showMeeting(meeting);
@@ -1578,17 +1637,12 @@
         return true;
       }
 
-      const aliveNonImpostors = alivePlayers.filter(p => p.role !== 'IMPOSTOR');
-      if (aliveNonImpostors.length > 0) {
-        const allTasksDone = aliveNonImpostors.every(p => {
-          const tasks = Object.values(p.tasks || {});
-          return tasks.length > 0 && tasks.every(t => t.done === true);
-        });
-        if (allTasksDone) {
-          await dbUpdate(['matches', myMatchId], { status: 'finished', winner: 'CREW_TASKS' });
-          return true;
-        }
+      const stats = getTaskStats(playersObj);
+      if (stats.total > 0 && stats.done >= stats.total) {
+        await dbUpdate(['matches', myMatchId], { status: 'finished', winner: 'CREW_TASKS' });
+        return true;
       }
+
       return false;
     }
 
