@@ -522,7 +522,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getDatabase, ref, set, get, update, onValue, off, onDisconnect, serverTimestamp
+      getDatabase, ref, set, get, update, onValue, off, onDisconnect, serverTimestamp, remove
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
     const firebaseConfig = {
@@ -633,6 +633,15 @@
     let myPlayerSnapshot = null;
     let myColor = null;
     let fakeCrewTasksCache = makeTasks();
+    let joinInProgress = false;
+
+    function setJoinButtonBusy(isBusy){
+      joinInProgress = isBusy;
+      const btn = el('btnJoin');
+      if (!btn) return;
+      btn.disabled = isBusy;
+      btn.textContent = isBusy ? '⏳ Entrando...' : '🚀 Entrar na Partida';
+    }
 
     const el = id => document.getElementById(id);
 
@@ -740,6 +749,38 @@
 
     function getAliveConnectedPlayers(playersObj){
       return Object.values(playersObj || {}).filter(p => p && p.status === 'alive' && p.connected !== false);
+    }
+
+    function getConnectedPlayers(playersObj){
+      return Object.values(playersObj || {}).filter(p => p && p.connected !== false);
+    }
+
+    function getAlivePlayers(playersObj){
+      return getAliveConnectedPlayers(playersObj);
+    }
+
+    function showEjectionAnnouncement(payload){
+      const ov = el('ejectOverlay');
+      if (!ov || !payload) return;
+      el('ejectTitle').textContent = payload.title || 'Alguém foi ejetado.';
+      el('ejectSub').textContent = payload.sub || '';
+      ov.classList.remove('hidden');
+
+      clearTimeout(showEjectionAnnouncement._timer);
+      showEjectionAnnouncement._timer = setTimeout(async () => {
+        hideEjectionAnnouncement();
+        try {
+          const current = await dbGet(['matches', myMatchId, 'ejectionAnnouncement']);
+          if (current && current.id === payload.id && current.active) {
+            await dbUpdate(['matches', myMatchId, 'ejectionAnnouncement'], { active: false });
+          }
+        } catch(e) {}
+      }, 2600);
+    }
+
+    function hideEjectionAnnouncement(){
+      const ov = el('ejectOverlay');
+      if (ov) ov.classList.add('hidden');
     }
 
     function setRoleUI(role) {
@@ -1031,6 +1072,30 @@
 
       if (match.status === 'playing') return toast('🚫 Partida já iniciada.');
       const players = match.players || {};
+
+      const normalizedName = name.trim().toLowerCase();
+      const sameNamePlayer = Object.values(players).find(p => p && (p.name || '').trim().toLowerCase() === normalizedName);
+
+      if (sameNamePlayer) {
+        myPlayerId = sameNamePlayer.id;
+        myMatchId = matchId;
+        myName = sameNamePlayer.name || name;
+        myStatus = sameNamePlayer.status || 'alive';
+        myColor = sameNamePlayer.color || getFirstFreeColor(players, sameNamePlayer.id);
+        localStorage.setItem('au_pid', sameNamePlayer.id);
+        localStorage.setItem('au_mid', matchId);
+        await dbUpdate(['matches', matchId, 'players', sameNamePlayer.id], {
+          connected: true,
+          lastSeen: Date.now(),
+          color: myColor
+        });
+        await setupPresence(matchId, sameNamePlayer.id);
+        watchLobby(matchId, sameNamePlayer.id);
+        showScreen('lobby-screen');
+        el('lobbyCode').textContent = matchId;
+        return;
+      }
+
       if (Object.keys(players).length >= match.totalPlayers) return toast('🚫 Partida cheia.');
 
       const pid = uid();
@@ -1038,6 +1103,7 @@
       myMatchId = matchId;
       myName = name;
       myStatus = 'alive';
+      myColor = getFirstFreeColor(players, pid);
       localStorage.setItem('au_pid', pid);
       localStorage.setItem('au_mid', matchId);
 
@@ -1051,7 +1117,8 @@
         connected: true,
         lastSeen: Date.now(),
         ejected: false,
-        killCooldownUntil: 0
+        killCooldownUntil: 0,
+        color: myColor
       });
 
       await setupPresence(matchId, pid);
